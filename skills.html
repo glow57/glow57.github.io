@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skills &amp; Commands | GlowTrap Studio™</title>
+  <meta name="description" content="Browse 38 Ruflo skills and 168 commands — swarm orchestration, AgentDB, GitHub automation, SPARC modes, and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .sk-hero {
+      padding: 5rem 0 3rem; text-align: center;
+      background: radial-gradient(ellipse at top, rgba(209,176,110,0.10) 0%, transparent 60%);
+    }
+    .sk-hero h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 700; color: var(--ivory);
+      margin: 0.4rem 0 1rem;
+    }
+    .sk-hero p { color: var(--muted); font-size: 1.1rem; max-width: 560px; margin: 0 auto 2rem; }
+    .sk-stats { display: flex; gap: 2.5rem; justify-content: center; flex-wrap: wrap; }
+    .sk-stat { text-align: center; }
+    .sk-stat-num { display: block; font-family: "Cormorant Garamond", serif; font-size: 2.2rem; font-weight: 700; color: var(--gold); }
+    .sk-stat-label { font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* Tabs */
+    .sk-tabs-bar {
+      padding: 1.5rem 0;
+      position: sticky; top: 82px; z-index: 30;
+      background: rgba(9,7,11,0.92); backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .sk-tabs-inner { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .sk-tab-btn {
+      font-size: 0.9rem; font-family: inherit; cursor: pointer;
+      padding: 0.5rem 1.2rem; border-radius: 10px;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.04);
+      color: var(--muted); transition: all 0.15s;
+    }
+    .sk-tab-btn.active { border-color: rgba(209,176,110,0.4); background: rgba(209,176,110,0.08); color: var(--gold); }
+    .sk-search {
+      flex: 1; min-width: 200px;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.6rem 1rem;
+      color: var(--ivory); font-family: inherit; font-size: 0.95rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .sk-search:focus { border-color: rgba(209,176,110,0.5); }
+    .sk-search::placeholder { color: var(--muted); }
+    .sk-cat-sel {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.6rem 1rem;
+      color: var(--ivory); font-family: inherit; font-size: 0.88rem;
+      outline: none; cursor: pointer; min-width: 140px;
+    }
+    .sk-cat-sel option { background: #1a1220; }
+    .sk-count { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+
+    /* Content */
+    .sk-section { padding: 2.5rem 0 5rem; }
+    .sk-panel { display: none; }
+    .sk-panel.active { display: block; }
+
+    /* Skills grid */
+    .sk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.25rem;
+    }
+    .sk-card {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.5rem; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    }
+    .sk-card:hover {
+      border-color: rgba(209,176,110,0.35); background: rgba(209,176,110,0.05);
+      transform: translateY(-2px);
+    }
+    .sk-card-title { font-size: 1rem; font-weight: 600; color: var(--ivory); margin-bottom: 0.6rem; }
+    .sk-card-desc {
+      font-size: 0.82rem; color: var(--muted); line-height: 1.55;
+      display: -webkit-box; -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* Commands list */
+    .cmd-cat-heading {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--gold); margin: 2rem 0 0.75rem; padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .cmd-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .cmd-item {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.2rem; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: start;
+    }
+    .cmd-item:hover { border-color: rgba(209,176,110,0.3); background: rgba(209,176,110,0.04); }
+    .cmd-name { font-size: 0.9rem; font-weight: 600; color: var(--ivory); }
+    .cmd-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; grid-column: 1/-1; }
+    .cmd-cat-badge {
+      font-size: 0.68rem; padding: 0.15rem 0.5rem; border-radius: 20px;
+      background: rgba(209,176,110,0.1); color: var(--gold);
+      border: 1px solid rgba(209,176,110,0.25); white-space: nowrap;
+    }
+
+    /* Modal */
+    .sk-modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(9,7,11,0.88); z-index: 100;
+      overflow-y: auto; padding: 2rem 1rem;
+    }
+    .sk-modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
+    .sk-modal {
+      background: #14101c; border: 1px solid var(--border);
+      border-radius: 20px; width: min(720px, 100%); padding: 2rem; position: relative;
+    }
+    .sk-modal-close {
+      position: absolute; top: 1.2rem; right: 1.2rem;
+      background: rgba(255,255,255,0.07); border: none; color: var(--muted);
+      border-radius: 50%; width: 32px; height: 32px;
+      font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sk-modal-close:hover { background: rgba(255,255,255,0.13); color: var(--ivory); }
+    .sk-modal-cat { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 0.5rem; }
+    .sk-modal-title { font-family: "Cormorant Garamond", serif; font-size: 1.8rem; font-weight: 700; color: var(--ivory); margin-bottom: 0.8rem; }
+    .sk-modal-desc { color: var(--muted); font-size: 0.95rem; line-height: 1.65; margin-bottom: 1.4rem; }
+    .sk-md-block {
+      display: none; margin-top: 1rem;
+      background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem;
+      font-size: 0.78rem; color: var(--muted);
+      overflow: auto; max-height: 360px; white-space: pre-wrap; line-height: 1.6;
+    }
+    .sk-md-block.visible { display: block; }
+    .sk-modal-actions { margin-top: 1.4rem; }
+    .sk-btn-ghost {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 10px; padding: 0.65rem 1.4rem;
+      font-family: inherit; font-size: 0.9rem; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .sk-btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+
+    .sk-empty { text-align: center; padding: 4rem 1rem; color: var(--muted); }
+    .sk-empty h3 { color: var(--ivory); margin-bottom: 0.5rem; }
+    .sk-spinner { text-align: center; padding: 4rem; }
+    .sk-spinner::after {
+      content: ""; display: inline-block; width: 32px; height: 32px;
+      border: 2px solid var(--border); border-top-color: var(--gold);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media(max-width:600px) {
+      .sk-tabs-inner { flex-direction: column; align-items: stretch; }
+      .sk-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">38 skills. 168 commands. One framework.</div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="logo" href="index.html">GlowTrap Studio™</a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu"><span></span><span></span><span></span></button>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="perfume.html">Perfume</a>
+        <a href="products.html">Other Products</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="workflows.html">n8n Workflows</a>
+        <a href="agents.html">AI Agents</a>
+        <a href="sparc.html">SPARC</a>
+        <a href="skills.html" style="color:var(--gold)">Skills</a>
+      </nav>
+      <a class="nav-cta" href="contact.html">Shop / Inquire</a>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="index.html">Home</a><a href="perfume.html">Perfume</a>
+      <a href="products.html">Other Products</a><a href="about.html">About</a>
+      <a href="contact.html">Contact</a><a href="workflows.html">n8n Workflows</a>
+      <a href="agents.html">AI Agents</a><a href="sparc.html">SPARC</a><a href="skills.html">Skills</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="sk-hero">
+      <div class="container">
+        <p class="eyebrow">RUFLO FRAMEWORK</p>
+        <h1>Skills &amp; Commands</h1>
+        <p>Reusable skills and commands from the Ruflo AI orchestration framework — swarm coordination, vector memory, GitHub automation, SPARC modes, and more.</p>
+        <div class="sk-stats">
+          <div class="sk-stat"><span class="sk-stat-num" id="statSkills">38</span><span class="sk-stat-label">Skills</span></div>
+          <div class="sk-stat"><span class="sk-stat-num" id="statCmds">168</span><span class="sk-stat-label">Commands</span></div>
+          <div class="sk-stat"><span class="sk-stat-num" id="statShowing">—</span><span class="sk-stat-label">Showing</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="sk-tabs-bar">
+      <div class="container sk-tabs-inner">
+        <button class="sk-tab-btn active" data-tab="skills">Skills</button>
+        <button class="sk-tab-btn" data-tab="commands">Commands</button>
+        <input class="sk-search" id="skSearch" type="search" placeholder="Search…" autocomplete="off" />
+        <select class="sk-cat-sel" id="skCat"><option value="">All categories</option></select>
+        <span class="sk-count" id="skCount"></span>
+      </div>
+    </div>
+
+    <section class="sk-section">
+      <div class="container">
+        <div id="skSpinner" class="sk-spinner"></div>
+
+        <!-- Skills panel -->
+        <div class="sk-panel active" id="panel-skills">
+          <div class="sk-grid" id="skillsGrid"></div>
+          <div class="sk-empty" id="skillsEmpty" style="display:none">
+            <h3>No skills found</h3><p>Try a different search.</p>
+          </div>
+        </div>
+
+        <!-- Commands panel -->
+        <div class="sk-panel" id="panel-commands">
+          <div id="cmdsContainer"></div>
+          <div class="sk-empty" id="cmdsEmpty" style="display:none">
+            <h3>No commands found</h3><p>Try a different search.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div class="sk-modal-overlay" id="skModal" role="dialog" aria-modal="true">
+    <div class="sk-modal">
+      <button class="sk-modal-close" id="skModalClose" aria-label="Close">✕</button>
+      <div class="sk-modal-cat" id="mdCat"></div>
+      <div class="sk-modal-title" id="mdTitle"></div>
+      <div class="sk-modal-desc" id="mdDesc"></div>
+      <div class="sk-modal-actions">
+        <button class="sk-btn-ghost" id="mdToggle">View full spec</button>
+      </div>
+      <pre class="sk-md-block" id="mdBlock"></pre>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container footer-wrap">
+      <div>
+        <a class="logo footer-logo" href="index.html">GlowTrap Studio™</a>
+        <p class="footer-note">Black. Plum. Gold. Presence.</p>
+      </div>
+      <div class="footer-links">
+        <a href="workflows.html">n8n Workflows</a>
+        <a href="agents.html">AI Agents</a>
+        <a href="sparc.html">SPARC</a>
+        <a href="skills.html">Skills</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+  (function(){
+    const $ = id => document.getElementById(id);
+    let skills = [], commands = [];
+    let activeTab = 'skills';
+    let currentItem = null, currentType = '';
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    async function init() {
+      try {
+        const [sr, cr] = await Promise.all([
+          fetch('ruflo/skills-index.json'),
+          fetch('ruflo/commands-index.json')
+        ]);
+        skills = await sr.json();
+        commands = await cr.json();
+        $('statSkills').textContent = skills.length;
+        $('statCmds').textContent = commands.length;
+        $('skSpinner').style.display = 'none';
+        populateCats();
+        render();
+      } catch(e) {
+        $('skSpinner').style.display = 'none';
+      }
+    }
+
+    function populateCats() {
+      const sel = $('skCat');
+      // Clear except first option
+      while(sel.options.length > 1) sel.remove(1);
+      const source = activeTab === 'skills' ? skills : commands;
+      const cats = [...new Set(source.map(x => x.category || x.id))].sort();
+      cats.forEach(c => {
+        const o = document.createElement('option'); o.value = c;
+        o.textContent = c.replace(/-/g,' ').replace(/\b\w/g,x=>x.toUpperCase());
+        sel.appendChild(o);
+      });
+    }
+
+    function render() {
+      const q = $('skSearch').value.toLowerCase().trim();
+      const cat = $('skCat').value;
+
+      if (activeTab === 'skills') {
+        const filtered = skills.filter(s => {
+          if (cat && s.id !== cat) return false;
+          return !q || s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q);
+        });
+        $('statShowing').textContent = filtered.length;
+        $('skCount').textContent = filtered.length + ' skill' + (filtered.length!==1?'s':'');
+        renderSkills(filtered);
+      } else {
+        const filtered = commands.filter(c => {
+          if (cat && c.category !== cat) return false;
+          return !q || c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q) || c.category.toLowerCase().includes(q);
+        });
+        $('statShowing').textContent = filtered.length;
+        $('skCount').textContent = filtered.length + ' command' + (filtered.length!==1?'s':'');
+        renderCommands(filtered);
+      }
+    }
+
+    function renderSkills(filtered) {
+      const grid = $('skillsGrid');
+      grid.innerHTML = '';
+      $('skillsEmpty').style.display = filtered.length ? 'none' : 'block';
+      filtered.forEach(s => {
+        const el = document.createElement('div'); el.className = 'sk-card';
+        el.innerHTML = `<div class="sk-card-title">${esc(s.name)}</div><div class="sk-card-desc">${esc(s.description)}</div>`;
+        el.addEventListener('click', () => openModal(s, 'skills', `ruflo/skills/${s.id}/${s.file}`));
+        grid.appendChild(el);
+      });
+    }
+
+    function renderCommands(filtered) {
+      const container = $('cmdsContainer');
+      container.innerHTML = '';
+      $('cmdsEmpty').style.display = filtered.length ? 'none' : 'block';
+      if (!filtered.length) return;
+
+      // Group by category
+      const grouped = {};
+      filtered.forEach(c => {
+        if (!grouped[c.category]) grouped[c.category] = [];
+        grouped[c.category].push(c);
+      });
+
+      Object.entries(grouped).sort().forEach(([cat, items]) => {
+        const h = document.createElement('div'); h.className = 'cmd-cat-heading';
+        h.textContent = cat.replace(/-/g,' ').replace(/\b\w/g,x=>x.toUpperCase());
+        container.appendChild(h);
+        const list = document.createElement('div'); list.className = 'cmd-list';
+        items.forEach(c => {
+          const el = document.createElement('div'); el.className = 'cmd-item';
+          el.innerHTML = `
+            <div class="cmd-name">${esc(c.name)}</div>
+            <div><span class="cmd-cat-badge">${esc(c.category)}</span></div>
+            ${c.description ? `<div class="cmd-desc">${esc(c.description)}</div>` : ''}`;
+          el.addEventListener('click', () => openModal(c, 'commands', `ruflo/commands/${c.file}`));
+          list.appendChild(el);
+        });
+        container.appendChild(list);
+      });
+    }
+
+    function openModal(item, type, filePath) {
+      currentItem = item; currentType = filePath;
+      $('mdCat').textContent = (item.category || '').replace(/-/g,' ').replace(/\b\w/g,x=>x.toUpperCase());
+      $('mdTitle').textContent = item.name;
+      $('mdDesc').textContent = item.description || 'A Ruflo ' + type.slice(0,-1) + '.';
+      $('mdBlock').textContent = ''; $('mdBlock').classList.remove('visible');
+      $('mdToggle').textContent = 'View full spec';
+      $('skModal').classList.add('open'); document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() { $('skModal').classList.remove('open'); document.body.style.overflow = ''; }
+
+    async function toggleMd() {
+      const block = $('mdBlock');
+      if (block.classList.contains('visible')) {
+        block.classList.remove('visible'); $('mdToggle').textContent = 'View full spec'; return;
+      }
+      $('mdToggle').textContent = 'Loading…';
+      try {
+        const res = await fetch(currentType);
+        block.textContent = await res.text();
+        block.classList.add('visible'); $('mdToggle').textContent = 'Hide spec';
+      } catch { $('mdToggle').textContent = 'View full spec'; }
+    }
+
+    // Tab switching
+    document.querySelectorAll('.sk-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sk-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.sk-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        activeTab = btn.dataset.tab;
+        $('panel-' + activeTab).classList.add('active');
+        $('skSearch').value = '';
+        $('skCat').value = '';
+        populateCats();
+        render();
+      });
+    });
+
+    let debounce;
+    $('skSearch').addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(render, 200); });
+    $('skCat').addEventListener('change', render);
+    $('skModalClose').addEventListener('click', closeModal);
+    $('skModal').addEventListener('click', e => { if (e.target === $('skModal')) closeModal(); });
+    $('mdToggle').addEventListener('click', toggleMd);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    init();
+  })();
+  </script>
+</body>
+</html>

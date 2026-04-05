@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>n8n Workflows | GlowTrap Studio™</title>
+  <meta name="description" content="Browse 2000+ n8n automation workflows — search, filter, and download." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Workflows page ─────────────────────────────── */
+    .wf-hero {
+      padding: 5rem 0 3rem;
+      text-align: center;
+      background: radial-gradient(ellipse at top, rgba(209,176,110,0.10) 0%, transparent 60%);
+    }
+    .wf-hero h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 700;
+      color: var(--ivory);
+      margin: 0.4rem 0 1rem;
+    }
+    .wf-hero p {
+      color: var(--muted);
+      font-size: 1.1rem;
+      max-width: 540px;
+      margin: 0 auto 2rem;
+    }
+    .wf-stats {
+      display: flex;
+      gap: 2.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+    .wf-stat {
+      text-align: center;
+    }
+    .wf-stat-num {
+      display: block;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .wf-stat-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Controls ───────────────────────────────────── */
+    .wf-controls {
+      padding: 1.5rem 0 2rem;
+      position: sticky;
+      top: 82px;
+      z-index: 30;
+      background: rgba(9,7,11,0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .wf-controls-inner {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .wf-search {
+      flex: 1;
+      min-width: 220px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.65rem 1rem;
+      color: var(--ivory);
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .wf-search:focus {
+      border-color: rgba(209,176,110,0.5);
+    }
+    .wf-search::placeholder { color: var(--muted); }
+    .wf-select {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.65rem 1rem;
+      color: var(--ivory);
+      font-family: inherit;
+      font-size: 0.88rem;
+      outline: none;
+      cursor: pointer;
+      min-width: 160px;
+    }
+    .wf-select option { background: #1a1220; }
+    .wf-count {
+      font-size: 0.85rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ── Grid ───────────────────────────────────────── */
+    .wf-section {
+      padding: 2.5rem 0 5rem;
+    }
+    .wf-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.25rem;
+    }
+    .wf-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.4rem 1.5rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    }
+    .wf-card:hover {
+      border-color: rgba(209,176,110,0.35);
+      background: rgba(209,176,110,0.05);
+      transform: translateY(-2px);
+    }
+    .wf-card-cat {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      margin-bottom: 0.4rem;
+    }
+    .wf-card-title {
+      font-size: 0.97rem;
+      font-weight: 600;
+      color: var(--ivory);
+      line-height: 1.4;
+      margin-bottom: 0.75rem;
+    }
+    .wf-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .wf-badge {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.07);
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .wf-badge-gold {
+      background: rgba(209,176,110,0.1);
+      color: var(--gold);
+      border-color: rgba(209,176,110,0.25);
+    }
+    .wf-node-count {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    /* ── Load more ──────────────────────────────────── */
+    .wf-load-wrap {
+      text-align: center;
+      padding: 2rem 0;
+    }
+    .wf-load-btn {
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      border-radius: 12px;
+      padding: 0.75rem 2.2rem;
+      font-family: inherit;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .wf-load-btn:hover { background: rgba(209,176,110,0.1); }
+
+    /* ── Modal ──────────────────────────────────────── */
+    .wf-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(9,7,11,0.88);
+      z-index: 100;
+      overflow-y: auto;
+      padding: 2rem 1rem;
+    }
+    .wf-modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
+    .wf-modal {
+      background: #14101c;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: min(720px, 100%);
+      padding: 2rem;
+      position: relative;
+    }
+    .wf-modal-close {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.2rem;
+      background: rgba(255,255,255,0.07);
+      border: none;
+      color: var(--muted);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .wf-modal-close:hover { background: rgba(255,255,255,0.13); color: var(--ivory); }
+    .wf-modal-cat {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+    .wf-modal-title {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: var(--ivory);
+      margin-bottom: 1.2rem;
+      line-height: 1.3;
+    }
+    .wf-modal-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .wf-modal-section {
+      margin-bottom: 1.5rem;
+    }
+    .wf-modal-section h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+    .wf-node-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .wf-modal-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .wf-btn-primary {
+      background: var(--gold);
+      color: #09070b;
+      border: none;
+      border-radius: 10px;
+      padding: 0.65rem 1.6rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background 0.2s;
+    }
+    .wf-btn-primary:hover { background: var(--gold-light); }
+    .wf-btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 10px;
+      padding: 0.65rem 1.4rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .wf-btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+    .wf-json-block {
+      display: none;
+      margin-top: 1.2rem;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      font-family: "Courier New", monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      overflow: auto;
+      max-height: 320px;
+      white-space: pre;
+    }
+    .wf-json-block.visible { display: block; }
+
+    /* ── Empty / loading ────────────────────────────── */
+    .wf-empty {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--muted);
+    }
+    .wf-empty h3 { color: var(--ivory); margin-bottom: 0.5rem; }
+    .wf-spinner {
+      text-align: center;
+      padding: 4rem;
+      color: var(--muted);
+    }
+    .wf-spinner::after {
+      content: "";
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      .wf-controls-inner { flex-direction: column; align-items: stretch; }
+      .wf-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">Automate everything.</div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="logo" href="index.html">GlowTrap Studio™</a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="perfume.html">Perfume</a>
+        <a href="products.html">Other Products</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="workflows.html" style="color:var(--gold)">n8n Workflows</a>
+      </nav>
+      <a class="nav-cta" href="contact.html">Shop / Inquire</a>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="index.html">Home</a>
+      <a href="perfume.html">Perfume</a>
+      <a href="products.html">Other Products</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="workflows.html">n8n Workflows</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="wf-hero">
+      <div class="container">
+        <p class="eyebrow">AUTOMATION LIBRARY</p>
+        <h1>n8n Workflow Collection</h1>
+        <p>Browse, search, and download from 2000+ production-ready automation workflows spanning every major integration.</p>
+        <div class="wf-stats" id="statsBar">
+          <div class="wf-stat">
+            <span class="wf-stat-num" id="statTotal">—</span>
+            <span class="wf-stat-label">Workflows</span>
+          </div>
+          <div class="wf-stat">
+            <span class="wf-stat-num" id="statCategories">—</span>
+            <span class="wf-stat-label">Categories</span>
+          </div>
+          <div class="wf-stat">
+            <span class="wf-stat-num" id="statShowing">—</span>
+            <span class="wf-stat-label">Showing</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wf-controls">
+      <div class="container wf-controls-inner">
+        <input class="wf-search" id="wfSearch" type="search" placeholder="Search by name, category, or node type…" autocomplete="off" />
+        <select class="wf-select" id="wfCategory">
+          <option value="">All categories</option>
+        </select>
+        <span class="wf-count" id="wfCount"></span>
+      </div>
+    </div>
+
+    <section class="wf-section">
+      <div class="container">
+        <div id="wfSpinner" class="wf-spinner"></div>
+        <div id="wfGrid" class="wf-grid" style="display:none"></div>
+        <div id="wfEmpty" class="wf-empty" style="display:none">
+          <h3>No workflows found</h3>
+          <p>Try a different search term or category.</p>
+        </div>
+        <div class="wf-load-wrap" id="wfLoadWrap" style="display:none">
+          <button class="wf-load-btn" id="wfLoadMore">Load more workflows</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div class="wf-modal-overlay" id="wfModal" role="dialog" aria-modal="true">
+    <div class="wf-modal">
+      <button class="wf-modal-close" id="wfModalClose" aria-label="Close">✕</button>
+      <div class="wf-modal-cat" id="mdCat"></div>
+      <div class="wf-modal-title" id="mdTitle"></div>
+      <div class="wf-modal-tags" id="mdTags"></div>
+      <div class="wf-modal-section">
+        <h4>Nodes</h4>
+        <div class="wf-node-list" id="mdNodes"></div>
+      </div>
+      <div class="wf-modal-actions">
+        <a class="wf-btn-primary" id="mdDownload" href="#" download>↓ Download JSON</a>
+        <button class="wf-btn-ghost" id="mdToggleJson">View raw JSON</button>
+      </div>
+      <pre class="wf-json-block" id="mdJson"></pre>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container footer-wrap">
+      <div>
+        <a class="logo footer-logo" href="index.html">GlowTrap Studio™</a>
+        <p class="footer-note">Black. Plum. Gold. Presence.</p>
+      </div>
+      <div class="footer-links">
+        <a href="perfume.html">Perfume</a>
+        <a href="products.html">Other Products</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="workflows.html">n8n Workflows</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+  (function () {
+    const PAGE_SIZE = 48;
+    let allWorkflows = [];
+    let filtered = [];
+    let page = 0;
+    let currentWorkflow = null;
+
+    const $ = id => document.getElementById(id);
+
+    async function init() {
+      try {
+        const res = await fetch('n8n-workflows/index.json');
+        const data = await res.json();
+        allWorkflows = data.workflows;
+
+        // Stats
+        const cats = [...new Set(allWorkflows.map(w => w.category))].sort();
+        $('statTotal').textContent = allWorkflows.length.toLocaleString();
+        $('statCategories').textContent = cats.length.toLocaleString();
+
+        // Populate category select
+        const sel = $('wfCategory');
+        cats.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          sel.appendChild(opt);
+        });
+
+        $('wfSpinner').style.display = 'none';
+        applyFilter();
+      } catch (e) {
+        $('wfSpinner').style.display = 'none';
+        $('wfEmpty').style.display = 'block';
+        $('wfEmpty').querySelector('h3').textContent = 'Failed to load workflows';
+        $('wfEmpty').querySelector('p').textContent = e.message;
+      }
+    }
+
+    function applyFilter() {
+      const q = $('wfSearch').value.toLowerCase().trim();
+      const cat = $('wfCategory').value;
+      filtered = allWorkflows.filter(w => {
+        if (cat && w.category !== cat) return false;
+        if (!q) return true;
+        return (
+          w.name.toLowerCase().includes(q) ||
+          w.category.toLowerCase().includes(q) ||
+          (w.nodeTypes || []).some(t => t.toLowerCase().includes(q)) ||
+          (w.tags || []).some(t => String(t).toLowerCase().includes(q))
+        );
+      });
+      page = 0;
+      $('wfGrid').style.display = filtered.length ? 'grid' : 'none';
+      $('wfEmpty').style.display = filtered.length ? 'none' : 'block';
+      $('wfGrid').innerHTML = '';
+      $('statShowing').textContent = filtered.length.toLocaleString();
+      $('wfCount').textContent = filtered.length + ' result' + (filtered.length !== 1 ? 's' : '');
+      renderPage();
+    }
+
+    function renderPage() {
+      const start = page * PAGE_SIZE;
+      const slice = filtered.slice(start, start + PAGE_SIZE);
+      slice.forEach(w => $('wfGrid').appendChild(makeCard(w)));
+      page++;
+      const hasMore = page * PAGE_SIZE < filtered.length;
+      $('wfLoadWrap').style.display = hasMore ? 'block' : 'none';
+    }
+
+    function makeCard(w) {
+      const el = document.createElement('div');
+      el.className = 'wf-card';
+      el.innerHTML = `
+        <div class="wf-card-cat">${esc(w.category)}</div>
+        <div class="wf-card-title">${esc(w.name)}</div>
+        <div class="wf-card-meta">
+          ${(w.nodeTypes || []).slice(0,3).map(t => `<span class="wf-badge">${esc(t)}</span>`).join('')}
+          <span class="wf-node-count">${w.nodeCount} node${w.nodeCount !== 1 ? 's' : ''}</span>
+        </div>`;
+      el.addEventListener('click', () => openModal(w));
+      return el;
+    }
+
+    function openModal(w) {
+      currentWorkflow = w;
+      $('mdCat').textContent = w.category;
+      $('mdTitle').textContent = w.name;
+
+      const tags = $('mdTags');
+      tags.innerHTML = '';
+      (w.tags || []).forEach(t => {
+        const s = document.createElement('span');
+        s.className = 'wf-badge wf-badge-gold';
+        s.textContent = t;
+        tags.appendChild(s);
+      });
+      if (!w.tags || !w.tags.length) {
+        const s = document.createElement('span');
+        s.className = 'wf-badge';
+        s.textContent = w.category;
+        tags.appendChild(s);
+      }
+
+      const nodes = $('mdNodes');
+      nodes.innerHTML = (w.nodeTypes || []).map(t =>
+        `<span class="wf-badge">${esc(t)}</span>`
+      ).join('');
+      if (!nodes.innerHTML) nodes.innerHTML = '<span class="wf-badge">—</span>';
+
+      const jsonPath = `n8n-workflows/workflows/${w.path}`;
+      $('mdDownload').href = jsonPath;
+      $('mdDownload').download = w.filename;
+      $('mdJson').textContent = '';
+      $('mdJson').classList.remove('visible');
+      $('mdToggleJson').textContent = 'View raw JSON';
+
+      $('wfModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      $('wfModal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    async function toggleJson() {
+      const block = $('mdJson');
+      if (block.classList.contains('visible')) {
+        block.classList.remove('visible');
+        $('mdToggleJson').textContent = 'View raw JSON';
+        return;
+      }
+      $('mdToggleJson').textContent = 'Loading…';
+      try {
+        const path = `n8n-workflows/workflows/${currentWorkflow.path}`;
+        const res = await fetch(path);
+        const json = await res.json();
+        block.textContent = JSON.stringify(json, null, 2);
+        block.classList.add('visible');
+        $('mdToggleJson').textContent = 'Hide JSON';
+      } catch {
+        $('mdToggleJson').textContent = 'View raw JSON';
+      }
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // Events
+    let debounce;
+    $('wfSearch').addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(applyFilter, 220);
+    });
+    $('wfCategory').addEventListener('change', applyFilter);
+    $('wfLoadMore').addEventListener('click', renderPage);
+    $('wfModalClose').addEventListener('click', closeModal);
+    $('wfModal').addEventListener('click', e => { if (e.target === $('wfModal')) closeModal(); });
+    $('mdToggleJson').addEventListener('click', toggleJson);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    init();
+  })();
+  </script>
+</body>
+</html>

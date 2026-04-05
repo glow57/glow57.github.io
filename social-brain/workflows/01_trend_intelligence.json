@@ -1,0 +1,359 @@
+{
+  "name": "01 - Trend Intelligence Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Trend Intelligence Engine\n\nRuns every 2 hours to harvest trending topics across TikTok, YouTube, and Instagram.\n\n**Outputs to:** Notion \"Trends Database\"\n\n**Required env vars:**\n- `RAPIDAPI_KEY` — RapidAPI key for TikTok + Instagram endpoints\n- `YOUTUBE_API_KEY` — Google Cloud API key with YouTube Data v3 enabled\n- `NOTION_TRENDS_DB` — Notion database ID for trend storage\n- `NOTION_API_KEY` — Notion integration token",
+        "height": 220,
+        "width": 380,
+        "color": 5
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [0, -280]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Every 2 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "content": "### TikTok Trending Hashtags\nCalls TikTok API via RapidAPI.\nReturns top trending hashtag objects with `title`, `videoCount`, `viewCount`.",
+        "height": 140,
+        "width": 260,
+        "color": 6
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Sticky Note - TikTok",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [220, -200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://tiktok-api23.p.rapidapi.com/api/trending/hashtag",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-RapidAPI-Key",
+              "value": "={{$env.RAPIDAPI_KEY}}"
+            },
+            {
+              "name": "X-RapidAPI-Host",
+              "value": "tiktok-api23.p.rapidapi.com"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+      "name": "TikTok Trending Hashtags",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "content": "### YouTube Trending Videos\nFetches top 20 most-popular videos globally.\nReturns snippet + statistics (views, likes, comments).",
+        "height": 140,
+        "width": 260,
+        "color": 6
+      },
+      "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+      "name": "Sticky Note - YouTube",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [440, -200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "sendQueryParameters": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet,statistics"
+            },
+            {
+              "name": "chart",
+              "value": "mostPopular"
+            },
+            {
+              "name": "maxResults",
+              "value": "20"
+            },
+            {
+              "name": "key",
+              "value": "={{$env.YOUTUBE_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+      "name": "YouTube Trending Videos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "content": "### Instagram Trending Hashtags\nScrapes recent posts tagged #trending via RapidAPI Instagram scraper.\nReturns post captions, like/comment counts.",
+        "height": 140,
+        "width": 260,
+        "color": 6
+      },
+      "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+      "name": "Sticky Note - Instagram",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [660, -200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://instagram-scraper-api2.p.rapidapi.com/v1/hashtag_posts",
+        "sendQueryParameters": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "hashtag",
+              "value": "trending"
+            },
+            {
+              "name": "sort_by",
+              "value": "recent"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-RapidAPI-Key",
+              "value": "={{$env.RAPIDAPI_KEY}}"
+            },
+            {
+              "name": "X-RapidAPI-Host",
+              "value": "instagram-scraper-api2.p.rapidapi.com"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "b8c9d0e1-f2a3-4567-bcde-678901234567",
+      "name": "Instagram Trending Hashtags",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "content": "### Merge & Normalize Trends\nCombines all three platform responses.\nNormalizes field names, scores trends, deduplicates topics.\n\n**TrendScore formula:**\n`(views/1M * 40) + (engagement_rate * 40) + (recency_bonus * 20)`",
+        "height": 160,
+        "width": 300,
+        "color": 4
+      },
+      "id": "c9d0e1f2-a3b4-5678-cdef-789012345678",
+      "name": "Sticky Note - Merge Logic",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [880, -220]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Collect all platform inputs ───────────────────────────────────────────\nconst tiktokData   = $('TikTok Trending Hashtags').first().json;\nconst youtubeData  = $('YouTube Trending Videos').first().json;\nconst instagramData = $('Instagram Trending Hashtags').first().json;\n\nconst now = new Date().toISOString();\n\n// ─── Helper: cap score to 100 ────────────────────────────────────────────────\nfunction clamp(val, min = 0, max = 100) {\n  return Math.min(max, Math.max(min, val));\n}\n\n// ─── Normalize TikTok hashtags ───────────────────────────────────────────────\nconst tiktokTrends = [];\ntry {\n  const hashtags = tiktokData?.data?.hashtag_list || tiktokData?.hashtag_list || [];\n  for (const tag of hashtags.slice(0, 20)) {\n    const views      = Number(tag.video_views || tag.viewCount || 0);\n    const videoCount = Number(tag.video_count  || tag.videoCount || 1);\n    const engRate    = videoCount > 0 ? (views / videoCount / 1_000_000) : 0;\n    const score      = clamp(Math.round((views / 1_000_000) * 40 + engRate * 40 + 20));\n    tiktokTrends.push({\n      name:           `#${tag.title || tag.hashtag_name || 'unknown'}`,\n      platform:       'TikTok',\n      trendScore:     score,\n      hashtags:       [tag.title || tag.hashtag_name || ''],\n      exampleContent: tag.cover_url || tag.cover || '',\n      createdAt:      now,\n    });\n  }\n} catch (e) {\n  console.log('TikTok parse error:', e.message);\n}\n\n// ─── Normalize YouTube videos ─────────────────────────────────────────────────\nconst youtubeTrends = [];\ntry {\n  const items = youtubeData?.items || [];\n  for (const item of items) {\n    const views    = Number(item.statistics?.viewCount    || 0);\n    const likes    = Number(item.statistics?.likeCount    || 0);\n    const comments = Number(item.statistics?.commentCount || 0);\n    const engRate  = views > 0 ? ((likes + comments) / views) * 100 : 0;\n    const score    = clamp(Math.round((views / 1_000_000) * 40 + engRate * 40 + 15));\n    const tags     = item.snippet?.tags?.slice(0, 5) || [];\n    youtubeTrends.push({\n      name:           item.snippet?.title || 'Unknown Video',\n      platform:       'YouTube',\n      trendScore:     score,\n      hashtags:       tags,\n      exampleContent: item.snippet?.thumbnails?.high?.url || '',\n      createdAt:      now,\n    });\n  }\n} catch (e) {\n  console.log('YouTube parse error:', e.message);\n}\n\n// ─── Normalize Instagram posts ────────────────────────────────────────────────\nconst instagramTrends = [];\ntry {\n  const posts = instagramData?.data?.posts || instagramData?.posts || [];\n  for (const post of posts.slice(0, 20)) {\n    const likes    = Number(post.like_count    || post.likes_count    || 0);\n    const comments = Number(post.comment_count || post.comments_count || 0);\n    const caption  = (post.caption?.text || post.caption || '').slice(0, 200);\n    // extract hashtags from caption\n    const tagMatches = caption.match(/#[\\w]+/g) || [];\n    const score = clamp(Math.round(((likes + comments) / 1000) * 40 + tagMatches.length * 2 + 10));\n    instagramTrends.push({\n      name:           caption.slice(0, 80) || `#trending post`,\n      platform:       'Instagram',\n      trendScore:     score,\n      hashtags:       tagMatches.slice(0, 10),\n      exampleContent: post.thumbnail_url || post.display_url || '',\n      createdAt:      now,\n    });\n  }\n} catch (e) {\n  console.log('Instagram parse error:', e.message);\n}\n\n// ─── Merge & sort by trendScore desc ─────────────────────────────────────────\nconst allTrends = [...tiktokTrends, ...youtubeTrends, ...instagramTrends]\n  .sort((a, b) => b.trendScore - a.trendScore);\n\n// Return one item per trend so downstream nodes iterate\nreturn allTrends.map(trend => ({ json: trend }));\n"
+      },
+      "id": "d0e1f2a3-b4c5-6789-defa-890123456789",
+      "name": "Extract & Normalize Trends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "content": "### Notion Upsert\nWrites each normalized trend into the Notion \"Trends Database\".\nUses `Name` as the unique key — existing rows are updated, new rows are created.\n\n**Database properties expected:**\nName (title), Platform (select), TrendScore (number), Hashtags (multi-select), ExampleContent (url), CreatedAt (date)",
+        "height": 180,
+        "width": 300,
+        "color": 3
+      },
+      "id": "e1f2a3b4-c5d6-7890-efab-901234567890",
+      "name": "Sticky Note - Notion",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1100, -240]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "value": "={{$env.NOTION_TRENDS_DB}}",
+          "mode": "id"
+        },
+        "title": "={{$json.name}}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Platform",
+              "type": "select",
+              "selectValue": "={{$json.platform}}"
+            },
+            {
+              "key": "TrendScore",
+              "type": "number",
+              "numberValue": "={{$json.trendScore}}"
+            },
+            {
+              "key": "Hashtags",
+              "type": "multiSelect",
+              "multiSelectValue": "={{$json.hashtags.join(',')}}"
+            },
+            {
+              "key": "ExampleContent",
+              "type": "url",
+              "urlValue": "={{$json.exampleContent}}"
+            },
+            {
+              "key": "CreatedAt",
+              "type": "date",
+              "dateValue": "={{$json.createdAt}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f2a3b4c5-d6e7-8901-fabc-012345678901",
+      "name": "Upsert Trend to Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1100, 0],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-credential-id",
+          "name": "Notion API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 2 Hours": {
+      "main": [
+        [
+          {
+            "node": "TikTok Trending Hashtags",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "YouTube Trending Videos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Instagram Trending Hashtags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Trending Hashtags": {
+      "main": [
+        [
+          {
+            "node": "Extract & Normalize Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Trending Videos": {
+      "main": [
+        [
+          {
+            "node": "Extract & Normalize Trends",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Instagram Trending Hashtags": {
+      "main": [
+        [
+          {
+            "node": "Extract & Normalize Trends",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Extract & Normalize Trends": {
+      "main": [
+        [
+          {
+            "node": "Upsert Trend to Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "social-brain"
+    },
+    {
+      "name": "trends"
+    }
+  ]
+}

@@ -1,0 +1,490 @@
+{
+  "name": "04 - AI Content Brain (The Core)",
+  "nodes": [
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -300],
+      "parameters": {
+        "content": "## AI Content Brain\n\n**Purpose:** Core content generation engine. Accepts a topic, platform, and style, then queries Notion for trends and performance data, sends a rich context prompt to Claude, and saves a full content plan back to Notion.\n\n**Trigger:** POST /webhook/content-brain\n\n**Required ENV Vars:**\n- `NOTION_API_KEY`\n- `NOTION_TRENDS_DB`\n- `NOTION_PERFORMANCE_DB`\n- `NOTION_CREATOR_INTEL_DB`\n- `NOTION_CONTENT_PIPELINE_DB`\n- `ANTHROPIC_API_KEY`",
+        "height": 280,
+        "width": 380
+      }
+    },
+    {
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Webhook - Receive Content Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 100],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "content-brain",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Sticky Note - Notion Queries",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [380, -200],
+      "parameters": {
+        "content": "## Notion Data Gathering\n\nThese three HTTP requests pull live context from Notion:\n1. Top 5 trends by TrendScore\n2. Top performing content patterns\n3. Winning hooks from Creator Intelligence DB\n\nAll results are merged into the Claude prompt.",
+        "height": 200,
+        "width": 300
+      }
+    },
+    {
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+      "name": "HTTP - Query Notion Trends DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 100],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/{{$env.NOTION_TRENDS_DB}}/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.NOTION_API_KEY}}"
+            },
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"filter\": {\n    \"property\": \"Active\",\n    \"checkbox\": {\n      \"equals\": true\n    }\n  },\n  \"sorts\": [\n    {\n      \"property\": \"TrendScore\",\n      \"direction\": \"descending\"\n    }\n  ],\n  \"page_size\": 5\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+      "name": "HTTP - Query Notion Performance DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/{{$env.NOTION_PERFORMANCE_DB}}/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.NOTION_API_KEY}}"
+            },
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"sorts\": [\n    {\n      \"property\": \"EngagementRate\",\n      \"direction\": \"descending\"\n    }\n  ],\n  \"page_size\": 10\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+      "name": "HTTP - Query Creator Intelligence DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 500],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/{{$env.NOTION_CREATOR_INTEL_DB}}/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.NOTION_API_KEY}}"
+            },
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"filter\": {\n    \"property\": \"Category\",\n    \"select\": {\n      \"equals\": \"Hook\"\n    }\n  },\n  \"sorts\": [\n    {\n      \"property\": \"WinRate\",\n      \"direction\": \"descending\"\n    }\n  ],\n  \"page_size\": 10\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+      "name": "Sticky Note - Context Assembly",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [680, -200],
+      "parameters": {
+        "content": "## Context Assembly\n\nCombines user input + Notion data into a structured prompt object that gets passed to Claude.\n\nOutputs: `contextPrompt`, `systemPrompt`, `userTopic`, `platform`, `style`",
+        "height": 160,
+        "width": 280
+      }
+    },
+    {
+      "id": "b8c9d0e1-f2a3-4567-bcde-678901234567",
+      "name": "Code - Assemble Rich Context Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Gather inputs from all upstream nodes\nconst webhookData = $('Webhook - Receive Content Request').first().json.body;\nconst trendsData = $('HTTP - Query Notion Trends DB').first().json;\nconst performanceData = $('HTTP - Query Notion Performance DB').first().json;\nconst creatorData = $('HTTP - Query Creator Intelligence DB').first().json;\n\nconst userTopic = webhookData.topic || 'general content';\nconst platform = webhookData.platform || 'tiktok';\nconst style = webhookData.style || 'educational';\n\n// Extract top trends\nconst trends = (trendsData.results || []).map(page => {\n  const props = page.properties || {};\n  return {\n    name: props.Name?.title?.[0]?.plain_text || 'Unknown Trend',\n    score: props.TrendScore?.number || 0,\n    description: props.Description?.rich_text?.[0]?.plain_text || '',\n    hashtags: props.Hashtags?.rich_text?.[0]?.plain_text || ''\n  };\n});\n\n// Extract performance patterns\nconst patterns = (performanceData.results || []).map(page => {\n  const props = page.properties || {};\n  return {\n    contentType: props.ContentType?.select?.name || 'Unknown',\n    engagementRate: props.EngagementRate?.number || 0,\n    avgViews: props.AvgViews?.number || 0,\n    pattern: props.Pattern?.rich_text?.[0]?.plain_text || '',\n    platform: props.Platform?.select?.name || 'All'\n  };\n});\n\n// Extract winning hooks\nconst hooks = (creatorData.results || []).map(page => {\n  const props = page.properties || {};\n  return {\n    hook: props.Hook?.title?.[0]?.plain_text || '',\n    winRate: props.WinRate?.number || 0,\n    template: props.Template?.rich_text?.[0]?.plain_text || ''\n  };\n});\n\n// Build platform-specific guidance\nconst platformGuidance = {\n  tiktok: 'TikTok: Hook in first 2 seconds, fast-paced edits, trending audio, 15-60 seconds optimal, vertical 9:16',\n  youtube: 'YouTube Shorts: Hook in first 3 seconds, value-dense, strong CTA, 60 seconds max, vertical 9:16',\n  instagram: 'Instagram Reels: Aesthetic visuals, hook in 3 seconds, trending audio, 15-30 seconds optimal, vertical 9:16',\n  twitter: 'Twitter/X Video: Text-on-screen for silent viewing, hook in first frame, 30-60 seconds, landscape or square ok'\n};\n\nconst styleGuidance = {\n  educational: 'Educational: Teach one concrete thing. Use \"Did you know\", \"Stop doing X\", \"The secret to X\" hooks.',\n  entertaining: 'Entertaining: Make them laugh or feel something. Use relatable situations, unexpected twists.',\n  motivational: 'Motivational: Inspire action. Use transformation stories, before/after, \"You can do this\" energy.',\n  storytelling: 'Storytelling: Personal narrative arc. Hook with conflict, resolve with lesson.'\n};\n\nconst systemPrompt = `You are a world-class viral content strategist and scriptwriter who has helped creators grow from 0 to millions of followers. You deeply understand the psychology of attention, the mechanics of algorithms, and what makes content shareable.\n\nYou specialize in ${platform} content that is ${style}. You understand platform-specific best practices, trending formats, and audience psychology.\n\nYou ALWAYS respond with valid JSON only. No markdown, no explanations outside the JSON structure.`;\n\nconst userMessage = `Create a complete viral content plan for this topic: \"${userTopic}\"\n\nPlatform: ${platform}\nStyle: ${style}\nPlatform Guidance: ${platformGuidance[platform] || platformGuidance.tiktok}\nStyle Guidance: ${styleGuidance[style] || styleGuidance.educational}\n\nCURRENT TRENDING TOPICS (use these for relevance):\n${JSON.stringify(trends, null, 2)}\n\nTOP PERFORMING CONTENT PATTERNS (replicate what works):\n${JSON.stringify(patterns.slice(0, 5), null, 2)}\n\nWINNING HOOK TEMPLATES (adapt these proven hooks):\n${JSON.stringify(hooks.slice(0, 5), null, 2)}\n\nGenerate a complete content plan as JSON with this EXACT structure:\n{\n  \"videoIdeas\": [\n    {\n      \"ideaNumber\": 1,\n      \"title\": \"Video title\",\n      \"hook\": \"Opening hook line (first 2-3 seconds)\",\n      \"angle\": \"Unique angle or perspective\",\n      \"viralMechanism\": \"Why this will go viral\",\n      \"estimatedViews\": \"View range estimate\"\n    }\n  ],\n  \"featuredScript\": {\n    \"ideaNumber\": 1,\n    \"hook\": \"Exact opening words\",\n    \"intro\": \"Seconds 0-10 script\",\n    \"mainContent\": \"Seconds 10-50 script\",\n    \"conclusion\": \"Seconds 50-60 script\",\n    \"totalDuration\": \"60 seconds\",\n    \"toneNotes\": \"Delivery notes\"\n  },\n  \"captions\": {\n    \"tiktok\": \"TikTok caption with emoji and hashtags\",\n    \"youtube\": \"YouTube Shorts caption with hashtags\",\n    \"instagram\": \"Instagram Reels caption with emoji and hashtags\"\n  },\n  \"hashtags\": {\n    \"primary\": [\"list\", \"of\", \"5\", \"primary\", \"hashtags\"],\n    \"secondary\": [\"list\", \"of\", \"10\", \"secondary\", \"hashtags\"],\n    \"niche\": [\"list\", \"of\", \"5\", \"niche\", \"hashtags\"]\n  },\n  \"thumbnailConcept\": {\n    \"visualDescription\": \"What the thumbnail looks like\",\n    \"textOverlay\": \"Bold text on thumbnail\",\n    \"colorScheme\": \"Color palette\",\n    \"faceExpression\": \"Emotion/expression if applicable\"\n  },\n  \"brollSuggestions\": [\n    \"B-roll shot 1 description\",\n    \"B-roll shot 2 description\",\n    \"B-roll shot 3 description\",\n    \"B-roll shot 4 description\",\n    \"B-roll shot 5 description\"\n  ],\n  \"callToActionOptions\": [\n    \"CTA option 1\",\n    \"CTA option 2\",\n    \"CTA option 3\"\n  ],\n  \"bestPostingTime\": \"Recommended posting time window\",\n  \"trendAlignment\": \"Which current trend this aligns with\"\n}`;\n\nreturn [{\n  json: {\n    systemPrompt,\n    userMessage,\n    userTopic,\n    platform,\n    style,\n    trendsUsed: trends.length,\n    patternsUsed: patterns.length,\n    hooksUsed: hooks.length\n  }\n}];"
+      }
+    },
+    {
+      "id": "c9d0e1f2-a3b4-5678-cdef-789012345678",
+      "name": "Sticky Note - Claude API Call",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [980, -200],
+      "parameters": {
+        "content": "## Claude API Call\n\nSends full context prompt to claude-opus-4-5.\n\nMax tokens: 4096\nTemperature: 0.8 (creative but structured)\n\nExpects JSON response back.",
+        "height": 160,
+        "width": 260
+      }
+    },
+    {
+      "id": "d0e1f2a3-b4c5-6789-defa-890123456789",
+      "name": "HTTP - Claude API Generate Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "{{$env.ANTHROPIC_API_KEY}}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-opus-4-5\",\n  \"max_tokens\": 4096,\n  \"temperature\": 0.8,\n  \"system\": \"{{ $json.systemPrompt }}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.userMessage }}\"\n    }\n  ]\n}",
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "e1f2a3b4-c5d6-7890-efab-901234567890",
+      "name": "Sticky Note - Parse and Save",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1280, -200],
+      "parameters": {
+        "content": "## Parse + Save to Notion\n\nParses Claude's JSON response, then creates a page in the Content Pipeline Notion DB.\n\nFinal node sends the full plan back to the original webhook caller.",
+        "height": 160,
+        "width": 280
+      }
+    },
+    {
+      "id": "f2a3b4c5-d6e7-8901-fabc-012345678901",
+      "name": "Code - Parse Claude Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const claudeResponse = $input.first().json;\nconst codeOutput = $('Code - Assemble Rich Context Prompt').first().json;\n\n// Extract the text content from Claude's response\nlet rawContent = '';\ntry {\n  rawContent = claudeResponse.content?.[0]?.text || '';\n} catch (e) {\n  throw new Error('Failed to extract Claude response text: ' + e.message);\n}\n\n// Parse JSON from Claude's response\nlet contentPlan;\ntry {\n  // Try direct parse first\n  contentPlan = JSON.parse(rawContent);\n} catch (e) {\n  // Try extracting JSON from markdown code block if present\n  const jsonMatch = rawContent.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n  if (jsonMatch) {\n    try {\n      contentPlan = JSON.parse(jsonMatch[1]);\n    } catch (e2) {\n      throw new Error('Failed to parse Claude JSON response: ' + rawContent.substring(0, 500));\n    }\n  } else {\n    throw new Error('No valid JSON found in Claude response: ' + rawContent.substring(0, 500));\n  }\n}\n\n// Build the featured idea title\nconst featuredIdea = contentPlan.videoIdeas?.[contentPlan.featuredScript?.ideaNumber - 1] \n  || contentPlan.videoIdeas?.[0] \n  || {};\n\n// Flatten hashtags for Notion\nconst allHashtags = [\n  ...(contentPlan.hashtags?.primary || []),\n  ...(contentPlan.hashtags?.secondary || []),\n  ...(contentPlan.hashtags?.niche || [])\n].join(' ');\n\n// Build captions text\nconst captionBlock = [\n  `=== TikTok ===\\n${contentPlan.captions?.tiktok || ''}`,\n  `\\n=== YouTube ===\\n${contentPlan.captions?.youtube || ''}`,\n  `\\n=== Instagram ===\\n${contentPlan.captions?.instagram || ''}`\n].join('');\n\n// Build B-roll text\nconst brollText = (contentPlan.brollSuggestions || []).join('\\n• ');\n\n// Build full script\nconst fullScript = contentPlan.featuredScript ? [\n  `HOOK: ${contentPlan.featuredScript.hook || ''}`,\n  `INTRO (0-10s): ${contentPlan.featuredScript.intro || ''}`,\n  `MAIN (10-50s): ${contentPlan.featuredScript.mainContent || ''}`,\n  `CLOSE (50-60s): ${contentPlan.featuredScript.conclusion || ''}`,\n  `TONE: ${contentPlan.featuredScript.toneNotes || ''}`\n].join('\\n\\n') : '';\n\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    contentPlan,\n    notionPayload: {\n      ideaTitle: featuredIdea.title || codeOutput.userTopic,\n      hook: featuredIdea.hook || '',\n      fullScript,\n      captions: captionBlock,\n      hashtags: allHashtags,\n      thumbnailConcept: JSON.stringify(contentPlan.thumbnailConcept || {}),\n      brollSuggestions: '• ' + brollText,\n      callToActions: (contentPlan.callToActionOptions || []).join('\\n'),\n      platform: codeOutput.platform,\n      style: codeOutput.style,\n      topic: codeOutput.userTopic,\n      trendAlignment: contentPlan.trendAlignment || '',\n      generatedAt: now\n    },\n    // Pass full plan for webhook response\n    responsePayload: {\n      success: true,\n      contentPlan,\n      savedAt: now,\n      platform: codeOutput.platform,\n      topic: codeOutput.userTopic\n    }\n  }\n}];"
+      }
+    },
+    {
+      "id": "a3b4c5d6-e7f8-9012-abcd-123456789012",
+      "name": "Notion - Create Content Pipeline Entry",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1600, 300],
+      "parameters": {
+        "resource": "page",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "value": "={{$env.NOTION_CONTENT_PIPELINE_DB}}",
+          "mode": "id"
+        },
+        "title": "=={{ $json.notionPayload.ideaTitle }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Hook",
+              "type": "rich_text",
+              "textContent": "={{ $json.notionPayload.hook }}"
+            },
+            {
+              "key": "Platform",
+              "type": "select",
+              "selectValue": "={{ $json.notionPayload.platform }}"
+            },
+            {
+              "key": "Style",
+              "type": "select",
+              "selectValue": "={{ $json.notionPayload.style }}"
+            },
+            {
+              "key": "Topic",
+              "type": "rich_text",
+              "textContent": "={{ $json.notionPayload.topic }}"
+            },
+            {
+              "key": "Status",
+              "type": "select",
+              "selectValue": "Idea"
+            },
+            {
+              "key": "Priority",
+              "type": "select",
+              "selectValue": "Medium"
+            },
+            {
+              "key": "TrendAlignment",
+              "type": "rich_text",
+              "textContent": "={{ $json.notionPayload.trendAlignment }}"
+            },
+            {
+              "key": "GeneratedAt",
+              "type": "date",
+              "date": "={{ $json.notionPayload.generatedAt }}"
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "heading_2",
+              "textContent": "Hook"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "={{ $json.notionPayload.hook }}"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "Full Script"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "={{ $json.notionPayload.fullScript }}"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "Captions (All Platforms)"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "={{ $json.notionPayload.captions }}"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "Hashtags"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "={{ $json.notionPayload.hashtags }}"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "Thumbnail Concept"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "={{ $json.notionPayload.thumbnailConcept }}"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "B-Roll Suggestions"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "={{ $json.notionPayload.brollSuggestions }}"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "Call-to-Action Options"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "={{ $json.notionPayload.callToActions }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b4c5d6e7-f8a9-0123-bcde-234567890123",
+      "name": "HTTP - Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1900, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($('Code - Parse Claude Response').first().json.responsePayload) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Receive Content Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Query Notion Trends DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Query Notion Trends DB": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Query Notion Performance DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Query Notion Performance DB": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Query Creator Intelligence DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Query Creator Intelligence DB": {
+      "main": [
+        [
+          {
+            "node": "Code - Assemble Rich Context Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Assemble Rich Context Prompt": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Claude API Generate Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Claude API Generate Content": {
+      "main": [
+        [
+          {
+            "node": "Code - Parse Claude Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parse Claude Response": {
+      "main": [
+        [
+          {
+            "node": "Notion - Create Content Pipeline Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion - Create Content Pipeline Entry": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "tags": [
+    {
+      "name": "social-brain"
+    },
+    {
+      "name": "content-generation"
+    },
+    {
+      "name": "claude-ai"
+    }
+  ]
+}

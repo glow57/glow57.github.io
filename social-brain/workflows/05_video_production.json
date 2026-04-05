@@ -1,0 +1,193 @@
+{
+  "name": "05 | Video Production Pipeline",
+  "nodes": [
+    {
+      "id": "e0000001-0005-4000-8000-000000000001",
+      "name": "Sticky Note — Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -200],
+      "parameters": {
+        "content": "## 05 | Video Production Pipeline\nTriggered when a Notion content item is marked Approved. Generates AI video or image carousel, adds voiceover via ElevenLabs, updates Notion with the final asset URL.\n\n**Env vars needed:**\n- RUNWAYML_API_KEY\n- ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID\n- HCTI_USER_ID, HCTI_API_KEY\n- NOTION_API_KEY, NOTION_PIPELINE_DB\n- N8N_WEBHOOK_URL (for chaining to scheduler)",
+        "height": 260, "width": 440, "color": 2
+      }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000002",
+      "name": "Webhook — Content Approved",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "video-production",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000003",
+      "name": "Fetch Content from Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [220, 0],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "get",
+        "pageId": "={{ $json.body.contentId }}"
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000004",
+      "name": "Route by Content Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [440, 0],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "rules": [
+            { "conditions": { "conditions": [{ "leftValue": "={{ $json.properties?.ContentType?.select?.name }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "Carousel" }] }, "renameOutput": true, "outputKey": "carousel" },
+            { "conditions": { "conditions": [{ "leftValue": "={{ $json.properties?.ContentType?.select?.name }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "AI Video" }] }, "renameOutput": true, "outputKey": "ai_video" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000005",
+      "name": "Generate Image Carousel (HCTI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, -100],
+      "parameters": {
+        "method": "POST",
+        "url": "https://hcti.io/v1/image",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"html\": \"<div style='background:#09070b;color:#f5ebdb;padding:60px;font-family:serif;font-size:48px;width:1080px;height:1080px;display:flex;align-items:center;justify-content:center;text-align:center'>{{ $json.properties?.Hook?.rich_text?.[0]?.plain_text || 'Your Hook Here' }}</div>\",\n  \"css\": \"body{margin:0}\"\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000006",
+      "name": "Generate AI Video (Runway)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 100],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.dev.runwayml.com/v1/image_to_video",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.RUNWAYML_API_KEY }}" },
+            { "name": "X-Runway-Version", "value": "2024-11-06" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"model\": \"gen3a_turbo\",\n  \"promptImage\": \"{{ $json.properties?.ThumbnailConcept?.rich_text?.[0]?.plain_text || 'cinematic product shot' }}\",\n  \"promptText\": \"{{ $json.properties?.Hook?.rich_text?.[0]?.plain_text || '' }}\",\n  \"duration\": 10,\n  \"ratio\": \"9:16\"\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000007",
+      "name": "Generate Voiceover (ElevenLabs)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $env.ELEVENLABS_VOICE_ID }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "xi-api-key", "value": "={{ $env.ELEVENLABS_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"text\": \"{{ $('Fetch Content from Notion').item.json.properties?.Script?.rich_text?.[0]?.plain_text?.substring(0, 2500) || 'Script goes here' }}\",\n  \"model_id\": \"eleven_turbo_v2\",\n  \"voice_settings\": { \"stability\": 0.5, \"similarity_boost\": 0.75 }\n}",
+        "options": { "response": { "response": { "responseFormat": "file" } } }
+      }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000008",
+      "name": "Merge Assets",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1120, 0],
+      "parameters": { "mode": "combine", "combinationMode": "mergeByPosition", "options": {} }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000009",
+      "name": "Update Notion — Video Ready",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1340, 0],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": "={{ $('Webhook — Content Approved').item.json.body.contentId }}",
+        "propertiesUi": {
+          "propertyValues": [
+            { "key": "Status", "type": "select", "selectValue": "VideoReady" },
+            { "key": "VideoUrl", "type": "url", "urlValue": "={{ $json.url || $json.id || '' }}" }
+          ]
+        }
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000010",
+      "name": "Trigger Smart Scheduler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_WEBHOOK_URL }}/webhook/schedule-content",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"contentId\": \"{{ $('Webhook — Content Approved').item.json.body.contentId }}\",\n  \"platform\": \"{{ $('Fetch Content from Notion').item.json.properties?.Platform?.multi_select?.[0]?.name || 'tiktok' }}\",\n  \"videoUrl\": \"{{ $('Update Notion — Video Ready').item.json.url || '' }}\"\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "e0000001-0005-4000-8000-000000000011",
+      "name": "Respond — Production Started",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [220, 200],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"production_started\", \"contentId\": \"{{ $json.body.contentId }}\" }"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Content Approved": {
+      "main": [[
+        { "node": "Fetch Content from Notion", "type": "main", "index": 0 },
+        { "node": "Respond — Production Started", "type": "main", "index": 0 }
+      ]]
+    },
+    "Fetch Content from Notion": { "main": [[{ "node": "Route by Content Type", "type": "main", "index": 0 }]] },
+    "Route by Content Type": {
+      "main": [
+        [{ "node": "Generate Image Carousel (HCTI)", "type": "main", "index": 0 }],
+        [{ "node": "Generate AI Video (Runway)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Generate Image Carousel (HCTI)": { "main": [[{ "node": "Generate Voiceover (ElevenLabs)", "type": "main", "index": 0 }]] },
+    "Generate AI Video (Runway)": { "main": [[{ "node": "Generate Voiceover (ElevenLabs)", "type": "main", "index": 0 }]] },
+    "Generate Voiceover (ElevenLabs)": { "main": [[{ "node": "Merge Assets", "type": "main", "index": 0 }]] },
+    "Merge Assets": { "main": [[{ "node": "Update Notion — Video Ready", "type": "main", "index": 0 }]] },
+    "Update Notion — Video Ready": { "main": [[{ "node": "Trigger Smart Scheduler", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "social-brain" }]
+}

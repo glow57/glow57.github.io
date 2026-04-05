@@ -1,0 +1,164 @@
+{
+  "name": "09 | Weekly Brain Report",
+  "nodes": [
+    {
+      "id": "i0000001-0009-4000-8000-000000000001",
+      "name": "Sticky Note — Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -200],
+      "parameters": {
+        "content": "## 09 | Weekly Brain Report\nRuns every Sunday at 9 AM. Compiles all performance data, sends it to Claude for deep analysis, creates a weekly report in Notion with recommendations, and pre-populates next week's calendar.\n\n**Env vars needed:**\n- ANTHROPIC_API_KEY\n- NOTION_API_KEY\n- NOTION_PERFORMANCE_DB, NOTION_PIPELINE_DB\n- NOTION_TRENDS_DB, NOTION_REPORTS_DB\n- NOTION_CALENDAR_DB\n- SLACK_WEBHOOK_URL",
+        "height": 280, "width": 440, "color": 4
+      }
+    },
+    {
+      "id": "i0000001-0009-4000-8000-000000000002",
+      "name": "Schedule — Sunday 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 9 * * 0" }] } }
+    },
+    {
+      "id": "i0000001-0009-4000-8000-000000000003",
+      "name": "Fetch Week Performance",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [220, -120],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "={{ $env.NOTION_PERFORMANCE_DB }}",
+        "returnAll": false,
+        "limit": 50
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    },
+    {
+      "id": "i0000001-0009-4000-8000-000000000004",
+      "name": "Fetch Pipeline Status",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [220, 0],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "={{ $env.NOTION_PIPELINE_DB }}",
+        "returnAll": false,
+        "limit": 30
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    },
+    {
+      "id": "i0000001-0009-4000-8000-000000000005",
+      "name": "Fetch Top Trends",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [220, 120],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "={{ $env.NOTION_TRENDS_DB }}",
+        "returnAll": false,
+        "limit": 10,
+        "options": {
+          "sort": [{ "key": "TrendScore", "direction": "descending" }]
+        }
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    },
+    {
+      "id": "i0000001-0009-4000-8000-000000000006",
+      "name": "Aggregate Weekly Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const perf = $('Fetch Week Performance').all().map(i => i.json);\nconst pipeline = $('Fetch Pipeline Status').all().map(i => i.json);\nconst trends = $('Fetch Top Trends').all().map(i => i.json);\n\nlet totalViews = 0, totalLikes = 0, totalComments = 0;\nlet published = 0;\nconst byPlatform = {};\nconst byContentType = {};\n\nfor (const p of perf) {\n  const views = p.properties?.Views?.number || 0;\n  const likes = p.properties?.Likes?.number || 0;\n  const comments = p.properties?.Comments?.number || 0;\n  const platform = p.properties?.Platform?.select?.name || 'Unknown';\n  const contentType = p.properties?.ContentType?.select?.name || 'Unknown';\n  \n  totalViews += views; totalLikes += likes; totalComments += comments;\n  \n  if (!byPlatform[platform]) byPlatform[platform] = { views: 0, posts: 0 };\n  byPlatform[platform].views += views;\n  byPlatform[platform].posts++;\n  \n  if (!byContentType[contentType]) byContentType[contentType] = { score: 0, posts: 0 };\n  byContentType[contentType].score += p.properties?.PerformanceScore?.number || 0;\n  byContentType[contentType].posts++;\n}\n\n// Pipeline stats\nconst statusCounts = {};\nfor (const p of pipeline) {\n  const status = p.properties?.Status?.select?.name || 'Unknown';\n  statusCounts[status] = (statusCounts[status] || 0) + 1;\n  if (status === 'Published' || status === 'Viral') published++;\n}\n\n// Top performers\nconst sorted = perf.sort((a, b) => (b.properties?.PerformanceScore?.number || 0) - (a.properties?.PerformanceScore?.number || 0));\nconst topContent = sorted.slice(0, 3).map(p => p.properties?.VideoTitle?.title?.[0]?.plain_text || 'Video').join(', ');\n\n// Top trends\nconst topTrends = trends.slice(0, 5).map(t => t.properties?.Name?.title?.[0]?.plain_text || 'Trend').join(', ');\n\nconst avgEngRate = perf.length ? (perf.reduce((s, p) => s + (p.properties?.EngagementRate?.number || 0), 0) / perf.length).toFixed(2) : 0;\n\nreturn [{\n  json: {\n    weekOf: new Date().toISOString().split('T')[0],\n    totalViews, totalLikes, totalComments,\n    postsPublished: published,\n    avgEngagementRate: parseFloat(avgEngRate),\n    topPerformingContent: topContent,\n    platformBreakdown: JSON.stringify(byPlatform),\n    contentTypeBreakdown: JSON.stringify(byContentType),\n    pipelineStatus: JSON.stringify(statusCounts),\n    topTrends,\n    totalPosts: perf.length\n  }\n}];"
+      }
+    },
+    {
+      "id": "i0000001-0009-4000-8000-000000000007",
+      "name": "Claude Weekly Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"model\": \"claude-opus-4-5\",\n  \"max_tokens\": 2000,\n  \"system\": \"You are an elite social media strategist. Analyze weekly performance data and provide razor-sharp, actionable insights.\",\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Weekly social media performance report:\\n\\nTotal Views: {{ $json.totalViews }}\\nTotal Likes: {{ $json.totalLikes }}\\nPosts Published: {{ $json.postsPublished }}\\nAvg Engagement Rate: {{ $json.avgEngagementRate }}%\\nTop Performing Content: {{ $json.topPerformingContent }}\\nPlatform Breakdown: {{ $json.platformBreakdown }}\\nContent Type Breakdown: {{ $json.contentTypeBreakdown }}\\nTop Trends This Week: {{ $json.topTrends }}\\n\\nProvide:\\n1. WEEK SUMMARY (2 sentences)\\n2. WHAT WORKED and why (3 bullet points)\\n3. WHAT FAILED and why (3 bullet points)\\n4. TOP 3 OPPORTUNITIES for next week (specific, actionable)\\n5. CONTENT MIX RECOMMENDATION for next week (platform % split)\\n6. ONE viral format to try\\n\\nFormat as clean, direct bullets. No fluff.\"\n  }]\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "i0000001-0009-4000-8000-000000000008",
+      "name": "Create Report in Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [960, 0],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": "={{ $env.NOTION_REPORTS_DB }}",
+        "title": "=Week of {{ $('Aggregate Weekly Stats').item.json.weekOf }}",
+        "propertiesUi": {
+          "propertyValues": [
+            { "key": "TotalViews", "type": "number", "numberValue": "={{ $('Aggregate Weekly Stats').item.json.totalViews }}" },
+            { "key": "TotalEngagements", "type": "number", "numberValue": "={{ $('Aggregate Weekly Stats').item.json.totalLikes + $('Aggregate Weekly Stats').item.json.totalComments }}" },
+            { "key": "PostsPublished", "type": "number", "numberValue": "={{ $('Aggregate Weekly Stats').item.json.postsPublished }}" },
+            { "key": "AvgEngagementRate", "type": "number", "numberValue": "={{ $('Aggregate Weekly Stats').item.json.avgEngagementRate }}" },
+            { "key": "TopPerformingContent", "type": "richText", "textContent": "={{ $('Aggregate Weekly Stats').item.json.topPerformingContent }}" },
+            { "key": "WeekSummary", "type": "richText", "textContent": "={{ $json.content?.[0]?.text?.value || $json.content?.[0]?.text || 'Analysis complete' }}" },
+            { "key": "NextWeekRecommendations", "type": "richText", "textContent": "={{ $json.content?.[0]?.text?.value || '' }}" },
+            { "key": "CreatedAt", "type": "date", "dateValue": "={{ new Date().toISOString() }}" }
+          ]
+        }
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    },
+    {
+      "id": "i0000001-0009-4000-8000-000000000009",
+      "name": "Post Summary to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1180, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"text\": \"📊 *Weekly Brain Report — Week of {{ $('Aggregate Weekly Stats').item.json.weekOf }}*\\n👁 Views: {{ $('Aggregate Weekly Stats').item.json.totalViews.toLocaleString() }} | ❤️ Likes: {{ $('Aggregate Weekly Stats').item.json.totalLikes.toLocaleString() }}\\n📬 Posts published: {{ $('Aggregate Weekly Stats').item.json.postsPublished }} | ER: {{ $('Aggregate Weekly Stats').item.json.avgEngagementRate }}%\\n🏆 Top content: {{ $('Aggregate Weekly Stats').item.json.topPerformingContent }}\\n\\nFull report in Notion.\"\n}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Schedule — Sunday 9AM": {
+      "main": [[
+        { "node": "Fetch Week Performance", "type": "main", "index": 0 },
+        { "node": "Fetch Pipeline Status", "type": "main", "index": 0 },
+        { "node": "Fetch Top Trends", "type": "main", "index": 0 }
+      ]]
+    },
+    "Fetch Week Performance": { "main": [[{ "node": "Aggregate Weekly Stats", "type": "main", "index": 0 }]] },
+    "Fetch Pipeline Status": { "main": [[{ "node": "Aggregate Weekly Stats", "type": "main", "index": 0 }]] },
+    "Fetch Top Trends": { "main": [[{ "node": "Aggregate Weekly Stats", "type": "main", "index": 0 }]] },
+    "Aggregate Weekly Stats": { "main": [[{ "node": "Claude Weekly Analysis", "type": "main", "index": 0 }]] },
+    "Claude Weekly Analysis": { "main": [[{ "node": "Create Report in Notion", "type": "main", "index": 0 }]] },
+    "Create Report in Notion": { "main": [[{ "node": "Post Summary to Slack", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "social-brain" }]
+}

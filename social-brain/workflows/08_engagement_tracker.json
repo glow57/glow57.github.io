@@ -1,0 +1,218 @@
+{
+  "name": "08 | Engagement Command Center",
+  "nodes": [
+    {
+      "id": "h0000001-0008-4000-8000-000000000001",
+      "name": "Sticky Note — Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -200],
+      "parameters": {
+        "content": "## 08 | Engagement Command Center\nRuns every hour. Checks engagement on posts published in the last 48 hours. Detects viral spikes (500%+ above average). Sends Slack alerts and flags viral content.\n\n**Env vars needed:**\n- RAPIDAPI_KEY\n- YOUTUBE_API_KEY\n- INSTAGRAM_ACCESS_TOKEN\n- NOTION_API_KEY, NOTION_PIPELINE_DB, NOTION_ENGAGEMENT_DB\n- SLACK_WEBHOOK_URL",
+        "height": 260, "width": 420, "color": 7
+      }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000002",
+      "name": "Schedule — Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] } }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000003",
+      "name": "Fetch Recent Published Posts",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [220, 0],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "={{ $env.NOTION_PIPELINE_DB }}",
+        "returnAll": false,
+        "limit": 20,
+        "options": {
+          "filter": {
+            "singleFilter": {
+              "property": "Status",
+              "select": { "equals": "Published" }
+            }
+          }
+        }
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000004",
+      "name": "Filter Posts Under 48h",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const cutoff = Date.now() - 48 * 3600 * 1000;\nreturn $input.all().filter(item => {\n  const publishedAt = item.json.properties?.PublishedAt?.date?.start;\n  if (!publishedAt) return false;\n  return new Date(publishedAt).getTime() > cutoff;\n});"
+      }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000005",
+      "name": "Split Per Post",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [660, 0],
+      "parameters": { "batchSize": 1, "options": {} }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000006",
+      "name": "Fetch TikTok Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, -120],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://tiktok-api23.p.rapidapi.com/api/video/info?videoId={{ $json.properties?.TikTokVideoId?.rich_text?.[0]?.plain_text || '' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-RapidAPI-Key", "value": "={{ $env.RAPIDAPI_KEY }}" },
+            { "name": "X-RapidAPI-Host", "value": "tiktok-api23.p.rapidapi.com" }
+          ]
+        },
+        "options": { "ignore404": true }
+      }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000007",
+      "name": "Fetch YouTube Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/youtube/v3/videos?part=statistics&id={{ $json.properties?.YouTubeVideoId?.rich_text?.[0]?.plain_text || '' }}&key={{ $env.YOUTUBE_API_KEY }}",
+        "options": { "ignore404": true }
+      }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000008",
+      "name": "Fetch Instagram Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 120],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.instagram.com/{{ $json.properties?.InstagramMediaId?.rich_text?.[0]?.plain_text || 'me' }}?fields=like_count,comments_count&access_token={{ $env.INSTAGRAM_ACCESS_TOKEN }}",
+        "options": { "ignore404": true }
+      }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000009",
+      "name": "Aggregate & Detect Viral",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 0],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const notion = $('Split Per Post').item.json;\nconst tiktok = $('Fetch TikTok Stats').item.json;\nconst yt = $('Fetch YouTube Stats').item.json;\nconst ig = $('Fetch Instagram Stats').item.json;\n\nconst title = notion.properties?.IdeaTitle?.title?.[0]?.plain_text || 'Post';\nconst publishedAt = notion.properties?.PublishedAt?.date?.start || new Date().toISOString();\nconst hoursSincePost = (Date.now() - new Date(publishedAt).getTime()) / 3600000;\n\nlet totalViews = 0, totalLikes = 0, totalComments = 0, totalShares = 0;\n\ntry {\n  const tv = tiktok.data?.video || {};\n  totalViews += tv.stats?.playCount || 0;\n  totalLikes += tv.stats?.diggCount || 0;\n  totalComments += tv.stats?.commentCount || 0;\n  totalShares += tv.stats?.shareCount || 0;\n} catch(e) {}\n\ntry {\n  const yvs = (yt.items || [])[0]?.statistics || {};\n  totalViews += parseInt(yvs.viewCount || 0);\n  totalLikes += parseInt(yvs.likeCount || 0);\n  totalComments += parseInt(yvs.commentCount || 0);\n} catch(e) {}\n\ntry {\n  totalLikes += ig.like_count || 0;\n  totalComments += ig.comments_count || 0;\n} catch(e) {}\n\nconst engRate = totalViews ? ((totalLikes + totalComments + totalShares) / totalViews * 100).toFixed(2) : 0;\nconst growthVelocity = hoursSincePost > 0 ? (totalViews / hoursSincePost).toFixed(0) : 0;\nconst isViral = parseFloat(engRate) > 5 && totalViews > 10000;\n\nreturn {\n  json: {\n    postTitle: title,\n    notionPageId: notion.id,\n    views: totalViews, likes: totalLikes,\n    comments: totalComments, shares: totalShares,\n    engagementRate: parseFloat(engRate),\n    hoursSincePost: Math.round(hoursSincePost),\n    growthVelocity: parseInt(growthVelocity),\n    isViral,\n    recordedAt: new Date().toISOString()\n  }\n};"
+      }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000010",
+      "name": "Save Engagement Snapshot",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1320, 0],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": "={{ $env.NOTION_ENGAGEMENT_DB }}",
+        "title": "={{ $json.postTitle + ' @ ' + $json.hoursSincePost + 'h' }}",
+        "propertiesUi": {
+          "propertyValues": [
+            { "key": "Views", "type": "number", "numberValue": "={{ $json.views }}" },
+            { "key": "Likes", "type": "number", "numberValue": "={{ $json.likes }}" },
+            { "key": "Comments", "type": "number", "numberValue": "={{ $json.comments }}" },
+            { "key": "Shares", "type": "number", "numberValue": "={{ $json.shares }}" },
+            { "key": "EngagementRate", "type": "number", "numberValue": "={{ $json.engagementRate }}" },
+            { "key": "HoursSincePost", "type": "number", "numberValue": "={{ $json.hoursSincePost }}" },
+            { "key": "GrowthVelocity", "type": "number", "numberValue": "={{ $json.growthVelocity }}" },
+            { "key": "IsViral", "type": "checkbox", "checkboxValue": "={{ $json.isViral }}" },
+            { "key": "RecordedAt", "type": "date", "dateValue": "={{ $json.recordedAt }}" }
+          ]
+        }
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000011",
+      "name": "Check Viral Threshold",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1540, 0],
+      "parameters": {
+        "conditions": {
+          "conditions": [{ "leftValue": "={{ $json.isViral }}", "operator": { "type": "boolean", "operation": "true" } }]
+        }
+      }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000012",
+      "name": "Slack Viral Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, -100],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"text\": \"🔥 *VIRAL ALERT* — {{ $json.postTitle }}\\n📈 Views: {{ $json.views }} | Likes: {{ $json.likes }} | ER: {{ $json.engagementRate }}%\\n⚡ Growth velocity: {{ $json.growthVelocity }} views/hr\"\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "h0000001-0008-4000-8000-000000000013",
+      "name": "Flag as Viral in Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1760, 100],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": "={{ $json.notionPageId }}",
+        "propertiesUi": {
+          "propertyValues": [
+            { "key": "Status", "type": "select", "selectValue": "Viral" }
+          ]
+        }
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    }
+  ],
+  "connections": {
+    "Schedule — Every Hour": { "main": [[{ "node": "Fetch Recent Published Posts", "type": "main", "index": 0 }]] },
+    "Fetch Recent Published Posts": { "main": [[{ "node": "Filter Posts Under 48h", "type": "main", "index": 0 }]] },
+    "Filter Posts Under 48h": { "main": [[{ "node": "Split Per Post", "type": "main", "index": 0 }]] },
+    "Split Per Post": {
+      "main": [[
+        { "node": "Fetch TikTok Stats", "type": "main", "index": 0 },
+        { "node": "Fetch YouTube Stats", "type": "main", "index": 0 },
+        { "node": "Fetch Instagram Stats", "type": "main", "index": 0 }
+      ]]
+    },
+    "Fetch TikTok Stats": { "main": [[{ "node": "Aggregate & Detect Viral", "type": "main", "index": 0 }]] },
+    "Fetch YouTube Stats": { "main": [[{ "node": "Aggregate & Detect Viral", "type": "main", "index": 0 }]] },
+    "Fetch Instagram Stats": { "main": [[{ "node": "Aggregate & Detect Viral", "type": "main", "index": 0 }]] },
+    "Aggregate & Detect Viral": { "main": [[{ "node": "Save Engagement Snapshot", "type": "main", "index": 0 }]] },
+    "Save Engagement Snapshot": { "main": [[{ "node": "Check Viral Threshold", "type": "main", "index": 0 }]] },
+    "Check Viral Threshold": {
+      "main": [
+        [{ "node": "Slack Viral Alert", "type": "main", "index": 0 }, { "node": "Flag as Viral in Notion", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "social-brain" }]
+}

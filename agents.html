@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agents | GlowTrap Studio™</title>
+  <meta name="description" content="Browse 75+ specialized AI agents from the Ruflo orchestration framework — architects, coders, testers, security specialists and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .ag-hero {
+      padding: 5rem 0 3rem;
+      text-align: center;
+      background: radial-gradient(ellipse at top, rgba(209,176,110,0.10) 0%, transparent 60%);
+    }
+    .ag-hero h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 700;
+      color: var(--ivory);
+      margin: 0.4rem 0 1rem;
+    }
+    .ag-hero p { color: var(--muted); font-size: 1.1rem; max-width: 560px; margin: 0 auto 2rem; }
+    .ag-stats { display: flex; gap: 2.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .ag-stat { text-align: center; }
+    .ag-stat-num { display: block; font-family: "Cormorant Garamond", serif; font-size: 2.2rem; font-weight: 700; color: var(--gold); }
+    .ag-stat-label { font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .ag-controls {
+      padding: 1.5rem 0;
+      position: sticky; top: 82px; z-index: 30;
+      background: rgba(9,7,11,0.92); backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .ag-controls-inner { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .ag-search {
+      flex: 1; min-width: 200px;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.65rem 1rem;
+      color: var(--ivory); font-family: inherit; font-size: 0.95rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .ag-search:focus { border-color: rgba(209,176,110,0.5); }
+    .ag-search::placeholder { color: var(--muted); }
+    .ag-select {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.65rem 1rem;
+      color: var(--ivory); font-family: inherit; font-size: 0.88rem;
+      outline: none; cursor: pointer; min-width: 150px;
+    }
+    .ag-select option { background: #1a1220; }
+    .ag-count { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+
+    .ag-section { padding: 2.5rem 0 5rem; }
+    .ag-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .ag-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.4rem 1.5rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      position: relative;
+    }
+    .ag-card:hover {
+      border-color: rgba(209,176,110,0.35);
+      background: rgba(209,176,110,0.05);
+      transform: translateY(-2px);
+    }
+    .ag-card-accent {
+      position: absolute; top: 0; left: 0;
+      width: 4px; height: 100%; border-radius: 16px 0 0 16px;
+    }
+    .ag-card-cat {
+      font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--gold); margin-bottom: 0.4rem;
+    }
+    .ag-card-title {
+      font-size: 1rem; font-weight: 600; color: var(--ivory);
+      line-height: 1.4; margin-bottom: 0.6rem;
+    }
+    .ag-card-desc {
+      font-size: 0.82rem; color: var(--muted); line-height: 1.5;
+      display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+    .ag-caps { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .ag-cap {
+      font-size: 0.68rem; padding: 0.15rem 0.45rem;
+      border-radius: 20px; background: rgba(255,255,255,0.07);
+      color: var(--muted); border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Modal */
+    .ag-modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(9,7,11,0.88); z-index: 100;
+      overflow-y: auto; padding: 2rem 1rem;
+    }
+    .ag-modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
+    .ag-modal {
+      background: #14101c; border: 1px solid var(--border);
+      border-radius: 20px; width: min(720px, 100%); padding: 2rem;
+      position: relative;
+    }
+    .ag-modal-close {
+      position: absolute; top: 1.2rem; right: 1.2rem;
+      background: rgba(255,255,255,0.07); border: none; color: var(--muted);
+      border-radius: 50%; width: 32px; height: 32px;
+      font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .ag-modal-close:hover { background: rgba(255,255,255,0.13); color: var(--ivory); }
+    .ag-modal-cat { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 0.5rem; }
+    .ag-modal-title {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 1.8rem; font-weight: 700; color: var(--ivory);
+      margin-bottom: 0.75rem; line-height: 1.3;
+    }
+    .ag-modal-type {
+      display: inline-block; font-size: 0.78rem; padding: 0.25rem 0.7rem;
+      border-radius: 20px; border: 1px solid rgba(209,176,110,0.3);
+      color: var(--gold); background: rgba(209,176,110,0.08);
+      margin-bottom: 1rem;
+    }
+    .ag-modal-desc { color: var(--muted); font-size: 0.95rem; line-height: 1.65; margin-bottom: 1.4rem; }
+    .ag-modal-section h4 {
+      font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.6rem;
+    }
+    .ag-cap-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.4rem; }
+    .ag-md-block {
+      display: none; margin-top: 1rem;
+      background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem;
+      font-size: 0.78rem; color: var(--muted);
+      overflow: auto; max-height: 340px;
+      white-space: pre-wrap; line-height: 1.6;
+    }
+    .ag-md-block.visible { display: block; }
+    .ag-modal-actions { display: flex; gap: 1rem; margin-top: 1.4rem; flex-wrap: wrap; }
+    .ag-btn-primary {
+      background: var(--gold); color: #09070b;
+      border: none; border-radius: 10px; padding: 0.65rem 1.6rem;
+      font-family: inherit; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .ag-btn-primary:hover { background: var(--gold-light); }
+    .ag-btn-ghost {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 10px; padding: 0.65rem 1.4rem;
+      font-family: inherit; font-size: 0.9rem; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .ag-btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+
+    .ag-empty { text-align: center; padding: 4rem 1rem; color: var(--muted); }
+    .ag-empty h3 { color: var(--ivory); margin-bottom: 0.5rem; }
+    .ag-spinner { text-align: center; padding: 4rem; color: var(--muted); }
+    .ag-spinner::after {
+      content: ""; display: inline-block; width: 32px; height: 32px;
+      border: 2px solid var(--border); border-top-color: var(--gold);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 600px) {
+      .ag-controls-inner { flex-direction: column; align-items: stretch; }
+      .ag-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">60+ specialized AI agents, ready to deploy.</div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="logo" href="index.html">GlowTrap Studio™</a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu"><span></span><span></span><span></span></button>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="perfume.html">Perfume</a>
+        <a href="products.html">Other Products</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="workflows.html">n8n Workflows</a>
+        <a href="agents.html" style="color:var(--gold)">AI Agents</a>
+        <a href="sparc.html">SPARC</a>
+        <a href="skills.html">Skills</a>
+      </nav>
+      <a class="nav-cta" href="contact.html">Shop / Inquire</a>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="index.html">Home</a><a href="perfume.html">Perfume</a>
+      <a href="products.html">Other Products</a><a href="about.html">About</a>
+      <a href="contact.html">Contact</a><a href="workflows.html">n8n Workflows</a>
+      <a href="agents.html">AI Agents</a><a href="sparc.html">SPARC</a><a href="skills.html">Skills</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="ag-hero">
+      <div class="container">
+        <p class="eyebrow">RUFLO FRAMEWORK</p>
+        <h1>AI Agent Directory</h1>
+        <p>75+ specialized AI agents from the Ruflo orchestration platform — from core coders and architects to swarm coordinators, security specialists, and neural intelligence.</p>
+        <div class="ag-stats">
+          <div class="ag-stat"><span class="ag-stat-num" id="statTotal">—</span><span class="ag-stat-label">Agents</span></div>
+          <div class="ag-stat"><span class="ag-stat-num" id="statCats">—</span><span class="ag-stat-label">Categories</span></div>
+          <div class="ag-stat"><span class="ag-stat-num" id="statShowing">—</span><span class="ag-stat-label">Showing</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ag-controls">
+      <div class="container ag-controls-inner">
+        <input class="ag-search" id="agSearch" type="search" placeholder="Search agents by name, type, or capability…" autocomplete="off" />
+        <select class="ag-select" id="agCat"><option value="">All categories</option></select>
+        <span class="ag-count" id="agCount"></span>
+      </div>
+    </div>
+
+    <section class="ag-section">
+      <div class="container">
+        <div id="agSpinner" class="ag-spinner"></div>
+        <div id="agGrid" class="ag-grid" style="display:none"></div>
+        <div id="agEmpty" class="ag-empty" style="display:none">
+          <h3>No agents found</h3><p>Try a different search or category.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="ag-modal-overlay" id="agModal" role="dialog" aria-modal="true">
+    <div class="ag-modal">
+      <button class="ag-modal-close" id="agModalClose" aria-label="Close">✕</button>
+      <div class="ag-modal-cat" id="mdCat"></div>
+      <div class="ag-modal-title" id="mdTitle"></div>
+      <div class="ag-modal-type" id="mdType"></div>
+      <div class="ag-modal-desc" id="mdDesc"></div>
+      <div class="ag-modal-section" id="mdCapsSection">
+        <h4>Capabilities</h4>
+        <div class="ag-cap-list" id="mdCaps"></div>
+      </div>
+      <div class="ag-modal-actions">
+        <button class="ag-btn-ghost" id="mdToggleMd">View agent spec</button>
+      </div>
+      <pre class="ag-md-block" id="mdBlock"></pre>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container footer-wrap">
+      <div>
+        <a class="logo footer-logo" href="index.html">GlowTrap Studio™</a>
+        <p class="footer-note">Black. Plum. Gold. Presence.</p>
+      </div>
+      <div class="footer-links">
+        <a href="workflows.html">n8n Workflows</a>
+        <a href="agents.html">AI Agents</a>
+        <a href="sparc.html">SPARC</a>
+        <a href="skills.html">Skills</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+  (function(){
+    const $ = id => document.getElementById(id);
+    let all = [], filtered = [], current = null;
+
+    const CATEGORY_COLORS = {
+      core: '#d1b06e', architecture: '#8b5cf6', analysis: '#06b6d4',
+      consensus: '#ef4444', data: '#10b981', development: '#f59e0b',
+      devops: '#3b82f6', documentation: '#ec4899', 'flow-nexus': '#a855f7',
+      github: '#6366f1', goal: '#14b8a6', 'hive-mind': '#f97316',
+      neural: '#22d3ee', optimization: '#84cc16', reasoning: '#fb923c',
+      sparc: '#e879f9', specialized: '#94a3b8', swarm: '#fbbf24',
+      templates: '#9ca3af', testing: '#34d399'
+    };
+
+    async function init() {
+      try {
+        const res = await fetch('ruflo/agents-index.json');
+        all = await res.json();
+        const cats = [...new Set(all.map(a => a.category))].sort();
+        $('statTotal').textContent = all.length;
+        $('statCats').textContent = cats.length;
+        cats.forEach(c => {
+          const o = document.createElement('option'); o.value = c;
+          o.textContent = c.replace(/-/g,' ').replace(/\b\w/g,x=>x.toUpperCase());
+          $('agCat').appendChild(o);
+        });
+        $('agSpinner').style.display = 'none';
+        applyFilter();
+      } catch(e) {
+        $('agSpinner').style.display = 'none';
+        $('agEmpty').style.display = 'block';
+      }
+    }
+
+    function applyFilter() {
+      const q = $('agSearch').value.toLowerCase().trim();
+      const cat = $('agCat').value;
+      filtered = all.filter(a => {
+        if (cat && a.category !== cat) return false;
+        if (!q) return true;
+        return a.name.toLowerCase().includes(q) || a.category.toLowerCase().includes(q) ||
+               a.description.toLowerCase().includes(q) || a.type.toLowerCase().includes(q) ||
+               (a.capabilities||[]).some(c => c.toLowerCase().includes(q));
+      });
+      $('statShowing').textContent = filtered.length;
+      $('agCount').textContent = filtered.length + ' agent' + (filtered.length !== 1 ? 's' : '');
+      render();
+    }
+
+    function render() {
+      const grid = $('agGrid');
+      grid.innerHTML = '';
+      if (!filtered.length) { grid.style.display = 'none'; $('agEmpty').style.display = 'block'; return; }
+      grid.style.display = 'grid'; $('agEmpty').style.display = 'none';
+      filtered.forEach(a => grid.appendChild(makeCard(a)));
+    }
+
+    function makeCard(a) {
+      const color = CATEGORY_COLORS[a.category] || '#d1b06e';
+      const el = document.createElement('div');
+      el.className = 'ag-card';
+      el.innerHTML = `
+        <div class="ag-card-accent" style="background:${color}22;border-left:3px solid ${color}55"></div>
+        <div class="ag-card-cat">${esc(a.category.replace(/-/g,' '))}</div>
+        <div class="ag-card-title">${esc(a.name)}</div>
+        ${a.description ? `<div class="ag-card-desc">${esc(a.description)}</div>` : ''}
+        <div class="ag-caps">${(a.capabilities||[]).slice(0,4).map(c=>`<span class="ag-cap">${esc(c.replace(/_/g,' '))}</span>`).join('')}</div>`;
+      el.addEventListener('click', () => openModal(a));
+      return el;
+    }
+
+    function openModal(a) {
+      current = a;
+      $('mdCat').textContent = a.category.replace(/-/g,' ').replace(/\b\w/g,x=>x.toUpperCase());
+      $('mdTitle').textContent = a.name;
+      $('mdType').textContent = a.type || a.category;
+      $('mdDesc').textContent = a.description || 'A specialized Ruflo AI agent.';
+      const caps = $('mdCaps');
+      caps.innerHTML = (a.capabilities||[]).map(c=>`<span class="ag-cap">${esc(c.replace(/_/g,' '))}</span>`).join('');
+      $('mdCapsSection').style.display = (a.capabilities||[]).length ? 'block' : 'none';
+      $('mdBlock').textContent = '';
+      $('mdBlock').classList.remove('visible');
+      $('mdToggleMd').textContent = 'View agent spec';
+      $('agModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() { $('agModal').classList.remove('open'); document.body.style.overflow = ''; }
+
+    async function toggleMd() {
+      const block = $('mdBlock');
+      if (block.classList.contains('visible')) {
+        block.classList.remove('visible'); $('mdToggleMd').textContent = 'View agent spec'; return;
+      }
+      $('mdToggleMd').textContent = 'Loading…';
+      try {
+        const res = await fetch(`ruflo/agents/${current.file}`);
+        block.textContent = await res.text();
+        block.classList.add('visible'); $('mdToggleMd').textContent = 'Hide spec';
+      } catch { $('mdToggleMd').textContent = 'View agent spec'; }
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    let debounce;
+    $('agSearch').addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(applyFilter, 200); });
+    $('agCat').addEventListener('change', applyFilter);
+    $('agModalClose').addEventListener('click', closeModal);
+    $('agModal').addEventListener('click', e => { if (e.target === $('agModal')) closeModal(); });
+    $('mdToggleMd').addEventListener('click', toggleMd);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    init();
+  })();
+  </script>
+</body>
+</html>

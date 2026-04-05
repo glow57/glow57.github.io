@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Media Brain | GlowTrap Studio™</title>
+  <meta name="description" content="Complete social media automation system — trend tracking, AI content generation, auto-posting, viral detection, and Notion dashboard." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Hero ─────────────────────────────────────────── */
+    .sb-hero {
+      padding: 5rem 0 4rem;
+      text-align: center;
+      background: radial-gradient(ellipse at top, rgba(209,176,110,0.12) 0%, transparent 55%);
+    }
+    .sb-hero h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(2.6rem, 6vw, 4.5rem);
+      font-weight: 700; color: var(--ivory); margin: 0.4rem 0 1rem;
+    }
+    .sb-hero p { color: var(--muted); font-size: 1.1rem; max-width: 620px; margin: 0 auto 2.5rem; }
+    .sb-hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+    /* ── System diagram ───────────────────────────────── */
+    .sb-diagram { padding: 4rem 0; }
+    .sb-diagram h2 { font-family: "Cormorant Garamond", serif; font-size: 2.4rem; font-weight: 700; color: var(--ivory); margin-bottom: 0.5rem; }
+    .sb-diagram-lead { color: var(--muted); margin-bottom: 2.5rem; }
+    .sb-flow {
+      display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+      justify-content: center; margin-bottom: 2rem;
+    }
+    .sb-flow-node {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1rem 1.3rem; text-align: center;
+      min-width: 120px; max-width: 150px;
+    }
+    .sb-flow-node-icon { font-size: 1.6rem; margin-bottom: 0.3rem; }
+    .sb-flow-node-label { font-size: 0.78rem; color: var(--muted); line-height: 1.3; }
+    .sb-flow-arrow {
+      color: var(--gold); font-size: 1.2rem; padding: 0 0.5rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Workflow cards ───────────────────────────────── */
+    .sb-workflows { padding: 0 0 4rem; }
+    .sb-workflows h2 { font-family: "Cormorant Garamond", serif; font-size: 2.4rem; font-weight: 700; color: var(--ivory); margin-bottom: 2rem; }
+    .sb-wf-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+    .sb-wf-card {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 18px; padding: 1.6rem; position: relative;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    }
+    .sb-wf-card:hover {
+      border-color: rgba(209,176,110,0.35); background: rgba(209,176,110,0.04);
+      transform: translateY(-2px);
+    }
+    .sb-wf-num {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 2.8rem; font-weight: 700; color: var(--gold);
+      opacity: 0.25; position: absolute; top: 1rem; right: 1.4rem;
+      line-height: 1;
+    }
+    .sb-wf-icon { font-size: 1.8rem; margin-bottom: 0.6rem; }
+    .sb-wf-title { font-size: 1.05rem; font-weight: 700; color: var(--ivory); margin-bottom: 0.4rem; }
+    .sb-wf-desc { font-size: 0.84rem; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; }
+    .sb-wf-trigger {
+      font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: 20px;
+      background: rgba(209,176,110,0.1); color: var(--gold);
+      border: 1px solid rgba(209,176,110,0.25); display: inline-block; margin-bottom: 0.8rem;
+    }
+    .sb-wf-apis { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .sb-api-badge {
+      font-size: 0.68rem; padding: 0.15rem 0.45rem; border-radius: 20px;
+      background: rgba(255,255,255,0.07); color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .sb-wf-download {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-top: 1rem; font-size: 0.82rem; color: var(--gold);
+      text-decoration: none; border: 1px solid rgba(209,176,110,0.3);
+      padding: 0.35rem 0.85rem; border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .sb-wf-download:hover { background: rgba(209,176,110,0.1); }
+
+    /* ── Notion dashboard ─────────────────────────────── */
+    .sb-notion { padding: 0 0 4rem; }
+    .sb-notion h2 { font-family: "Cormorant Garamond", serif; font-size: 2.4rem; font-weight: 700; color: var(--ivory); margin-bottom: 2rem; }
+    .sb-db-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .sb-db-card {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.3rem 1.4rem;
+    }
+    .sb-db-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .sb-db-name { font-size: 0.95rem; font-weight: 600; color: var(--ivory); margin-bottom: 0.3rem; }
+    .sb-db-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.55; margin-bottom: 0.6rem; }
+    .sb-db-fields { font-size: 0.72rem; color: rgba(209,176,110,0.8); }
+
+    /* ── Setup guide ──────────────────────────────────── */
+    .sb-setup { padding: 0 0 5rem; }
+    .sb-setup h2 { font-family: "Cormorant Garamond", serif; font-size: 2.4rem; font-weight: 700; color: var(--ivory); margin-bottom: 2rem; }
+    .sb-steps { display: flex; flex-direction: column; gap: 1.25rem; counter-reset: step; }
+    .sb-step {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.6rem 2rem;
+      display: grid; grid-template-columns: auto 1fr; gap: 1.2rem; align-items: start;
+      counter-increment: step;
+    }
+    .sb-step-num {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 2rem; font-weight: 700; color: var(--gold); line-height: 1;
+      min-width: 32px; text-align: center;
+    }
+    .sb-step-num::before { content: counter(step); }
+    .sb-step-title { font-size: 1rem; font-weight: 700; color: var(--ivory); margin-bottom: 0.4rem; }
+    .sb-step-body { font-size: 0.86rem; color: var(--muted); line-height: 1.65; }
+    .sb-step-body code {
+      font-size: 0.8rem; background: rgba(255,255,255,0.08);
+      padding: 0.1rem 0.4rem; border-radius: 5px; color: var(--gold);
+    }
+    .sb-step-body a { color: var(--gold); text-decoration: underline; text-decoration-color: rgba(209,176,110,0.4); }
+    .sb-code-block {
+      background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem 1.2rem;
+      font-family: "Courier New", monospace; font-size: 0.78rem;
+      color: #a8b4c4; margin-top: 0.75rem; overflow-x: auto;
+      white-space: pre;
+    }
+    .sb-kw { color: #e879f9; }
+    .sb-str { color: #86efac; }
+    .sb-cm { color: #475569; }
+
+    /* ── Buttons ──────────────────────────────────────── */
+    .btn { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 12px; padding: 0.75rem 1.8rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+    .btn-gold { background: var(--gold); color: #09070b; border: none; }
+    .btn-gold:hover { background: var(--gold-light); }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+    @media(max-width:640px) {
+      .sb-flow { gap: 0.5rem; }
+      .sb-flow-arrow { display: none; }
+      .sb-wf-grid, .sb-db-grid { grid-template-columns: 1fr; }
+      .sb-step { grid-template-columns: 1fr; }
+      .sb-step-num { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">You describe it. The system builds, posts, and tracks it.</div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="logo" href="index.html">GlowTrap Studio™</a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu"><span></span><span></span><span></span></button>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="perfume.html">Perfume</a>
+        <a href="products.html">Other Products</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="workflows.html">n8n Workflows</a>
+        <a href="agents.html">AI Agents</a>
+        <a href="sparc.html">SPARC</a>
+        <a href="skills.html">Skills</a>
+        <a href="social-brain.html" style="color:var(--gold)">Social Brain</a>
+      </nav>
+      <a class="nav-cta" href="contact.html">Shop / Inquire</a>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="index.html">Home</a><a href="perfume.html">Perfume</a>
+      <a href="products.html">Other Products</a><a href="about.html">About</a>
+      <a href="contact.html">Contact</a><a href="workflows.html">n8n Workflows</a>
+      <a href="agents.html">AI Agents</a><a href="sparc.html">SPARC</a>
+      <a href="skills.html">Skills</a><a href="social-brain.html">Social Brain</a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="sb-hero">
+      <div class="container">
+        <p class="eyebrow">AI-POWERED AUTOMATION</p>
+        <h1>Your Social Media Brain</h1>
+        <p>9 n8n workflows that track trends, spy on viral creators, generate AI content, produce videos, auto-post across every platform, detect virality, and report everything to a Notion dashboard — all from a single description.</p>
+        <div class="sb-hero-actions">
+          <a class="btn btn-gold" href="#setup">Setup Guide</a>
+          <a class="btn btn-outline" href="#workflows">Download Workflows</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- System flow -->
+    <section class="sb-diagram section">
+      <div class="container">
+        <p class="eyebrow center">HOW IT WORKS</p>
+        <h2 class="center">You describe. The brain executes.</h2>
+        <p class="sb-diagram-lead center">Send one sentence to the webhook. Every other step is automated.</p>
+        <div class="sb-flow">
+          <div class="sb-flow-node"><div class="sb-flow-node-icon">🗣️</div><div class="sb-flow-node-label">You describe what you want</div></div>
+          <div class="sb-flow-arrow">→</div>
+          <div class="sb-flow-node"><div class="sb-flow-node-icon">📡</div><div class="sb-flow-node-label">Trends &amp; Creator Intel</div></div>
+          <div class="sb-flow-arrow">→</div>
+          <div class="sb-flow-node"><div class="sb-flow-node-icon">🧠</div><div class="sb-flow-node-label">Claude AI generates ideas + script</div></div>
+          <div class="sb-flow-arrow">→</div>
+          <div class="sb-flow-node"><div class="sb-flow-node-icon">🎬</div><div class="sb-flow-node-label">Video produced automatically</div></div>
+          <div class="sb-flow-arrow">→</div>
+          <div class="sb-flow-node"><div class="sb-flow-node-icon">📅</div><div class="sb-flow-node-label">Optimal time scheduled</div></div>
+          <div class="sb-flow-arrow">→</div>
+          <div class="sb-flow-node"><div class="sb-flow-node-icon">🚀</div><div class="sb-flow-node-label">Auto-posted to all platforms</div></div>
+          <div class="sb-flow-arrow">→</div>
+          <div class="sb-flow-node"><div class="sb-flow-node-icon">📊</div><div class="sb-flow-node-label">Tracked &amp; reported in Notion</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Workflow cards -->
+    <section class="sb-workflows section" id="workflows">
+      <div class="container">
+        <p class="eyebrow">9 n8n WORKFLOWS</p>
+        <h2>The complete automation stack.</h2>
+        <div class="sb-wf-grid">
+
+          <div class="sb-wf-card">
+            <div class="sb-wf-num">01</div>
+            <div class="sb-wf-icon">📡</div>
+            <div class="sb-wf-title">Trend Intelligence Engine</div>
+            <div class="sb-wf-trigger">⏰ Every 2 hours</div>
+            <div class="sb-wf-desc">Scrapes TikTok, YouTube, and Instagram for trending hashtags and viral content. Calculates trend scores and stores everything in your Notion Trends Database.</div>
+            <div class="sb-wf-apis">
+              <span class="sb-api-badge">TikTok API</span>
+              <span class="sb-api-badge">YouTube Data API</span>
+              <span class="sb-api-badge">Instagram API</span>
+              <span class="sb-api-badge">Notion</span>
+            </div>
+            <a class="sb-wf-download" href="social-brain/workflows/01_trend_intelligence.json" download>↓ Download JSON</a>
+          </div>
+
+          <div class="sb-wf-card">
+            <div class="sb-wf-num">02</div>
+            <div class="sb-wf-icon">🕵️</div>
+            <div class="sb-wf-title">Viral Creator Monitor</div>
+            <div class="sb-wf-trigger">⏰ Daily at 8 AM</div>
+            <div class="sb-wf-desc">Tracks the creators you specify. Analyzes their engagement rates, identifies winning hooks, extracts content themes, and builds your personal creator intelligence database.</div>
+            <div class="sb-wf-apis">
+              <span class="sb-api-badge">RapidAPI TikTok</span>
+              <span class="sb-api-badge">Notion</span>
+            </div>
+            <a class="sb-wf-download" href="social-brain/workflows/02_creator_monitor.json" download>↓ Download JSON</a>
+          </div>
+
+          <div class="sb-wf-card">
+            <div class="sb-wf-num">03</div>
+            <div class="sb-wf-icon">📈</div>
+            <div class="sb-wf-title">Content Performance Analyzer</div>
+            <div class="sb-wf-trigger">⏰ Daily at 6 AM</div>
+            <div class="sb-wf-desc">Fetches your own stats from TikTok, YouTube, and Instagram. Calculates performance scores, finds your best content patterns, and identifies optimal posting windows.</div>
+            <div class="sb-wf-apis">
+              <span class="sb-api-badge">TikTok API</span>
+              <span class="sb-api-badge">YouTube Analytics</span>
+              <span class="sb-api-badge">Instagram Graph API</span>
+              <span class="sb-api-badge">Notion</span>
+            </div>
+            <a class="sb-wf-download" href="social-brain/workflows/03_performance_analyzer.json" download>↓ Download JSON</a>
+          </div>
+
+          <div class="sb-wf-card" style="border-color:rgba(209,176,110,0.25)">
+            <div class="sb-wf-num">04</div>
+            <div class="sb-wf-icon">🧠</div>
+            <div class="sb-wf-title">AI Content Brain</div>
+            <div class="sb-wf-trigger">⚡ Webhook — you trigger this one</div>
+            <div class="sb-wf-desc">The core. You POST one sentence describing what you want. Claude pulls in live trends + creator intel + your performance data, then generates 5 viral ideas, a full script, 3 caption variations, hashtag strategy, and thumbnail concept.</div>
+            <div class="sb-wf-apis">
+              <span class="sb-api-badge">Claude Opus</span>
+              <span class="sb-api-badge">Notion Trends DB</span>
+              <span class="sb-api-badge">Creator Intel DB</span>
+              <span class="sb-api-badge">Notion Pipeline</span>
+            </div>
+            <a class="sb-wf-download" href="social-brain/workflows/04_ai_content_brain.json" download>↓ Download JSON</a>
+          </div>
+
+          <div class="sb-wf-card">
+            <div class="sb-wf-num">05</div>
+            <div class="sb-wf-icon">🎬</div>
+            <div class="sb-wf-title">Video Production Pipeline</div>
+            <div class="sb-wf-trigger">⚡ Webhook — triggered on Approve</div>
+            <div class="sb-wf-desc">When you approve a content idea in Notion, this fires. Generates AI video via Runway ML or image carousels via HCTI, then creates a professional voiceover via ElevenLabs from your script.</div>
+            <div class="sb-wf-apis">
+              <span class="sb-api-badge">Runway ML</span>
+              <span class="sb-api-badge">ElevenLabs TTS</span>
+              <span class="sb-api-badge">HCTI Images</span>
+              <span class="sb-api-badge">Notion</span>
+            </div>
+            <a class="sb-wf-download" href="social-brain/workflows/05_video_production.json" download>↓ Download JSON</a>
+          </div>
+
+          <div class="sb-wf-card">
+            <div class="sb-wf-num">06</div>
+            <div class="sb-wf-icon">📅</div>
+            <div class="sb-wf-title">Smart Scheduler</div>
+            <div class="sb-wf-trigger">⚡ Auto-triggered by Video Pipeline</div>
+            <div class="sb-wf-desc">Analyzes your historical engagement timestamps to find when your audience is most active. Books the next available optimal posting window in the Notion Content Calendar.</div>
+            <div class="sb-wf-apis">
+              <span class="sb-api-badge">Notion Performance DB</span>
+              <span class="sb-api-badge">Notion Calendar DB</span>
+            </div>
+            <a class="sb-wf-download" href="social-brain/workflows/06_smart_scheduler.json" download>↓ Download JSON</a>
+          </div>
+
+          <div class="sb-wf-card">
+            <div class="sb-wf-num">07</div>
+            <div class="sb-wf-icon">🚀</div>
+            <div class="sb-wf-title">Cross-Platform Publisher</div>
+            <div class="sb-wf-trigger">⚡ Triggered at scheduled time</div>
+            <div class="sb-wf-desc">Posts your video to TikTok, YouTube Shorts, Instagram Reels, and Twitter/X simultaneously. Handles each platform's unique upload API, formats captions correctly, and stores all post IDs back in Notion.</div>
+            <div class="sb-wf-apis">
+              <span class="sb-api-badge">TikTok v2 API</span>
+              <span class="sb-api-badge">YouTube API v3</span>
+              <span class="sb-api-badge">Instagram Graph API</span>
+              <span class="sb-api-badge">Twitter API v2</span>
+            </div>
+            <a class="sb-wf-download" href="social-brain/workflows/07_cross_platform_publisher.json" download>↓ Download JSON</a>
+          </div>
+
+          <div class="sb-wf-card">
+            <div class="sb-wf-num">08</div>
+            <div class="sb-wf-icon">🔥</div>
+            <div class="sb-wf-title">Engagement Command Center</div>
+            <div class="sb-wf-trigger">⏰ Every hour (first 48h after post)</div>
+            <div class="sb-wf-desc">Monitors engagement on every recent post across all platforms. Detects viral spikes in real time, fires a Slack alert the moment a video starts going viral, and flags it in Notion for analysis.</div>
+            <div class="sb-wf-apis">
+              <span class="sb-api-badge">TikTok API</span>
+              <span class="sb-api-badge">YouTube API</span>
+              <span class="sb-api-badge">Instagram API</span>
+              <span class="sb-api-badge">Slack</span>
+              <span class="sb-api-badge">Notion</span>
+            </div>
+            <a class="sb-wf-download" href="social-brain/workflows/08_engagement_tracker.json" download>↓ Download JSON</a>
+          </div>
+
+          <div class="sb-wf-card">
+            <div class="sb-wf-num">09</div>
+            <div class="sb-wf-icon">📋</div>
+            <div class="sb-wf-title">Weekly Brain Report</div>
+            <div class="sb-wf-trigger">⏰ Every Sunday at 9 AM</div>
+            <div class="sb-wf-desc">Compiles your entire week — views, engagement, pipeline status, top trends — and sends it all to Claude for deep analysis. Creates a full report in Notion with what worked, what didn't, and your top 3 opportunities for next week.</div>
+            <div class="sb-wf-apis">
+              <span class="sb-api-badge">Claude Opus</span>
+              <span class="sb-api-badge">Notion (all DBs)</span>
+              <span class="sb-api-badge">Slack</span>
+            </div>
+            <a class="sb-wf-download" href="social-brain/workflows/09_weekly_brain_report.json" download>↓ Download JSON</a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Notion dashboard -->
+    <section class="sb-notion section">
+      <div class="container">
+        <p class="eyebrow">NOTION DASHBOARD — 7 DATABASES</p>
+        <h2>Your entire content universe, in one place.</h2>
+        <div class="sb-db-grid">
+          <div class="sb-db-card">
+            <div class="sb-db-icon">📡</div>
+            <div class="sb-db-name">Trends Database</div>
+            <div class="sb-db-desc">Live feed of trending topics across all platforms with scores and niche relevance.</div>
+            <div class="sb-db-fields">Platform · TrendScore · Hashtags · NicheRelevance</div>
+          </div>
+          <div class="sb-db-card">
+            <div class="sb-db-icon">🕵️</div>
+            <div class="sb-db-name">Creator Intelligence</div>
+            <div class="sb-db-desc">Profile intelligence on every creator you track — hooks, themes, engagement rates.</div>
+            <div class="sb-db-fields">FollowerCount · AvgEngagementRate · BestPerformingHooks</div>
+          </div>
+          <div class="sb-db-card">
+            <div class="sb-db-icon">📈</div>
+            <div class="sb-db-name">Performance Analytics</div>
+            <div class="sb-db-desc">All your published content stats — performance scores, watch time, platform breakdown.</div>
+            <div class="sb-db-fields">Views · EngagementRate · PerformanceScore · ContentType</div>
+          </div>
+          <div class="sb-db-card" style="border-color:rgba(209,176,110,0.2)">
+            <div class="sb-db-icon">🧠</div>
+            <div class="sb-db-name">Content Pipeline</div>
+            <div class="sb-db-desc">Kanban board from Idea → Scripted → Approved → InProduction → Scheduled → Published → Viral.</div>
+            <div class="sb-db-fields">Status · Hook · Script · Captions · Hashtags · VideoUrl</div>
+          </div>
+          <div class="sb-db-card">
+            <div class="sb-db-icon">📅</div>
+            <div class="sb-db-name">Content Calendar</div>
+            <div class="sb-db-desc">Calendar view of every scheduled post across all platforms with smart time slots.</div>
+            <div class="sb-db-fields">Platform · ScheduledTime · Status · VideoUrl</div>
+          </div>
+          <div class="sb-db-card">
+            <div class="sb-db-icon">🔥</div>
+            <div class="sb-db-name">Engagement Tracking</div>
+            <div class="sb-db-desc">Hourly snapshots of engagement on recent posts. Viral flag, growth velocity, trend detection.</div>
+            <div class="sb-db-fields">Views · EngagementRate · GrowthVelocity · IsViral</div>
+          </div>
+          <div class="sb-db-card">
+            <div class="sb-db-icon">📋</div>
+            <div class="sb-db-name">Weekly Reports</div>
+            <div class="sb-db-desc">AI-generated Sunday reports with full stats, what worked, what didn't, and next week's plan.</div>
+            <div class="sb-db-fields">TotalViews · WeekSummary · NextWeekRecommendations</div>
+          </div>
+        </div>
+        <div style="margin-top:1.5rem">
+          <a class="btn btn-outline" href="social-brain/notion/database_schemas.json" download>↓ Download Notion Schema JSON</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Setup guide -->
+    <section class="sb-setup section" id="setup">
+      <div class="container">
+        <p class="eyebrow">SETUP GUIDE</p>
+        <h2>Live in under 30 minutes.</h2>
+        <div class="sb-steps">
+
+          <div class="sb-step">
+            <div class="sb-step-num"></div>
+            <div>
+              <div class="sb-step-title">Install n8n (self-hosted or cloud)</div>
+              <div class="sb-step-body">
+                The fastest way is n8n Cloud — create a free account at <a href="https://app.n8n.cloud" target="_blank">app.n8n.cloud</a>. Or self-host with Docker:
+                <div class="sb-code-block"><span class="sb-kw">docker</span> run -it --rm \
+  -p 5678:5678 \
+  -v n8n_data:/home/node/.n8n \
+  n8nio/n8n</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sb-step">
+            <div class="sb-step-num"></div>
+            <div>
+              <div class="sb-step-title">Set up your Notion workspace</div>
+              <div class="sb-step-body">
+                Create a new Notion page called <code>Social Brain HQ</code>. Inside it, create all 7 databases listed above. Use the <a href="social-brain/notion/database_schemas.json" download>database schema JSON</a> as a reference for property types. Then create a Notion integration at <a href="https://www.notion.so/my-integrations" target="_blank">notion.so/my-integrations</a>, copy the API key, and share each database with the integration.
+              </div>
+            </div>
+          </div>
+
+          <div class="sb-step">
+            <div class="sb-step-num"></div>
+            <div>
+              <div class="sb-step-title">Configure environment variables</div>
+              <div class="sb-step-body">
+                Download the <a href="social-brain/config/.env.example" download>.env.example file</a>. Fill in your API keys for every service you want to use. In n8n, go to <code>Settings → Environment Variables</code> and add each one. At minimum you need: <code>ANTHROPIC_API_KEY</code>, <code>RAPIDAPI_KEY</code>, <code>NOTION_API_KEY</code>, and all 7 <code>NOTION_*_DB</code> IDs.
+              </div>
+            </div>
+          </div>
+
+          <div class="sb-step">
+            <div class="sb-step-num"></div>
+            <div>
+              <div class="sb-step-title">Import the 9 workflows into n8n</div>
+              <div class="sb-step-body">
+                Download all workflow JSON files above. In n8n, go to <code>Workflows → Import from File</code> and upload each JSON one by one. They import in seconds. You'll see all 9 workflows in your dashboard.
+              </div>
+            </div>
+          </div>
+
+          <div class="sb-step">
+            <div class="sb-step-num"></div>
+            <div>
+              <div class="sb-step-title">Add your API credentials in n8n</div>
+              <div class="sb-step-body">
+                In n8n, go to <code>Credentials</code> and add a <code>Notion API</code> credential using your integration token. The HTTP Request nodes use environment variables directly — no additional credential setup needed for those. Activate workflows 01, 02, 03, 08, and 09 (the scheduled ones) right away.
+              </div>
+            </div>
+          </div>
+
+          <div class="sb-step">
+            <div class="sb-step-num"></div>
+            <div>
+              <div class="sb-step-title">Set the creators you want to track</div>
+              <div class="sb-step-body">
+                In your n8n environment variables, set <code>TRACK_CREATORS</code> to a comma-separated list of TikTok usernames (no @ symbol). Example: <code>khaby.lame,mrbeast,yourcompetitor</code>. The monitor workflow will analyze them daily and build intelligence.
+              </div>
+            </div>
+          </div>
+
+          <div class="sb-step">
+            <div class="sb-step-num"></div>
+            <div>
+              <div class="sb-step-title">Use the AI Content Brain</div>
+              <div class="sb-step-body">
+                Send a POST request to your n8n webhook URL:
+                <div class="sb-code-block"><span class="sb-kw">curl</span> -X POST https://your-n8n.com/webhook/content-brain \
+  -H <span class="sb-str">"Content-Type: application/json"</span> \
+  -d <span class="sb-str">'{
+  "topic": "I want to make content about morning routines for entrepreneurs",
+  "platform": "tiktok",
+  "style": "educational+entertaining"
+}'</span></div>
+                Claude will pull in live trends, creator hooks, and your performance data, then return 5 viral ideas with full scripts and captions. The best one lands in your Notion pipeline automatically.
+              </div>
+            </div>
+          </div>
+
+          <div class="sb-step">
+            <div class="sb-step-num"></div>
+            <div>
+              <div class="sb-step-title">Approve content and let it run</div>
+              <div class="sb-step-body">
+                Open your Notion Content Pipeline board. Review the AI-generated ideas. Change any idea's <code>Status</code> from <code>Idea</code> to <code>Approved</code> — this triggers Video Production automatically. Once the video is ready, the Smart Scheduler picks the best posting time, and the Cross-Platform Publisher fires at that time. You just watch the numbers.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-wrap">
+      <div>
+        <a class="logo footer-logo" href="index.html">GlowTrap Studio™</a>
+        <p class="footer-note">Black. Plum. Gold. Presence.</p>
+      </div>
+      <div class="footer-links">
+        <a href="workflows.html">n8n Workflows</a>
+        <a href="agents.html">AI Agents</a>
+        <a href="sparc.html">SPARC</a>
+        <a href="skills.html">Skills</a>
+        <a href="social-brain.html">Social Brain</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

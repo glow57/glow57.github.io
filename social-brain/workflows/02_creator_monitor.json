@@ -1,0 +1,384 @@
+{
+  "name": "02 - Viral Creator Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Viral Creator Monitor\n\nRuns daily at 8 AM. Iterates through every creator in `TRACK_CREATORS`, pulls their TikTok profile + recent 10 posts, analyzes engagement patterns, and writes intelligence into Notion.\n\n**Required env vars:**\n- `TRACK_CREATORS` — comma-separated TikTok usernames, e.g. `khaby.lame,charlidamelio,mrbeasts`\n- `RAPIDAPI_KEY` — RapidAPI key (TikTok API23 host)\n- `NOTION_CREATORS_DB` — Notion database ID for creator intelligence\n- `NOTION_API_KEY` — Notion integration token",
+        "height": 240,
+        "width": 420,
+        "color": 5
+      },
+      "id": "11111111-1111-1111-1111-111111111101",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [0, -300]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "11111111-1111-1111-1111-111111111102",
+      "name": "Daily 8AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "content": "### Load Creator List\nReads `TRACK_CREATORS` env var (comma-separated usernames) and returns one item per creator so SplitInBatches can iterate.",
+        "height": 140,
+        "width": 280,
+        "color": 6
+      },
+      "id": "11111111-1111-1111-1111-111111111103",
+      "name": "Sticky Note - Load Creators",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [220, -180]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read the TRACK_CREATORS env var and split into individual creator objects\nconst raw = $env.TRACK_CREATORS || '';\nif (!raw.trim()) {\n  throw new Error('TRACK_CREATORS env var is empty. Add comma-separated TikTok usernames.');\n}\n\nconst usernames = raw\n  .split(',')\n  .map(u => u.trim().replace(/^@/, ''))\n  .filter(Boolean);\n\nreturn usernames.map(username => ({\n  json: { username }\n}));\n"
+      },
+      "id": "11111111-1111-1111-1111-111111111104",
+      "name": "Load Creator List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "content": "### Batch Processing\nProcesses one creator at a time (batchSize=1) to avoid rate-limit bursts on the TikTok RapidAPI endpoint.",
+        "height": 130,
+        "width": 260,
+        "color": 6
+      },
+      "id": "11111111-1111-1111-1111-111111111105",
+      "name": "Sticky Note - Batches",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [440, -180]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "11111111-1111-1111-1111-111111111106",
+      "name": "For Each Creator",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "content": "### TikTok User Profile\nFetches follower count, following, heart count, and bio for each creator. Used as the base profile data.",
+        "height": 130,
+        "width": 260,
+        "color": 6
+      },
+      "id": "11111111-1111-1111-1111-111111111107",
+      "name": "Sticky Note - User Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [660, -180]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://tiktok-api23.p.rapidapi.com/api/user/info",
+        "sendQueryParameters": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "uniqueId",
+              "value": "={{$json.username}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-RapidAPI-Key",
+              "value": "={{$env.RAPIDAPI_KEY}}"
+            },
+            {
+              "name": "X-RapidAPI-Host",
+              "value": "tiktok-api23.p.rapidapi.com"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "11111111-1111-1111-1111-111111111108",
+      "name": "TikTok User Info",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "content": "### Recent Videos (last 10)\nFetches the creator's 10 most recent posts including play count, like count, share count, comment count, and video description.",
+        "height": 140,
+        "width": 260,
+        "color": 6
+      },
+      "id": "11111111-1111-1111-1111-111111111109",
+      "name": "Sticky Note - Recent Videos",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [880, -200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://tiktok-api23.p.rapidapi.com/api/user/posts",
+        "sendQueryParameters": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "uniqueId",
+              "value": "={{$('For Each Creator').item.json.username}}"
+            },
+            {
+              "name": "count",
+              "value": "10"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-RapidAPI-Key",
+              "value": "={{$env.RAPIDAPI_KEY}}"
+            },
+            {
+              "name": "X-RapidAPI-Host",
+              "value": "tiktok-api23.p.rapidapi.com"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "11111111-1111-1111-1111-111111111110",
+      "name": "TikTok Recent Videos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "content": "### Analyze Creator Intelligence\nComputes:\n- Average engagement rate across 10 videos\n- Top content themes (from video descriptions/hashtags)\n- Posting frequency (days between posts)\n- Best performing hooks (first 10 words of top video descriptions)\n- Follower count from profile\n\n**Engagement Rate** = (likes + comments + shares) / plays * 100",
+        "height": 200,
+        "width": 320,
+        "color": 4
+      },
+      "id": "11111111-1111-1111-1111-111111111111",
+      "name": "Sticky Note - Analysis",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1100, -260]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Gather inputs from previous nodes ──────────────────────────────────────\nconst username     = $('For Each Creator').item.json.username;\nconst userResponse = $('TikTok User Info').item.json;\nconst postsResponse = $('TikTok Recent Videos').item.json;\n\n// ─── Parse user profile ──────────────────────────────────────────────────────\nconst userInfo = userResponse?.data?.user?.stats\n             || userResponse?.userInfo?.stats\n             || userResponse?.stats\n             || {};\nconst followerCount = Number(userInfo.followerCount || userInfo.fans || 0);\n\n// ─── Parse posts ─────────────────────────────────────────────────────────────\nconst rawPosts = postsResponse?.data?.videos\n              || postsResponse?.itemList\n              || postsResponse?.data?.itemList\n              || [];\n\nif (rawPosts.length === 0) {\n  return [{ json: {\n    creatorName:        username,\n    platform:           'TikTok',\n    avgEngagementRate:  0,\n    topContentThemes:   'No data',\n    postingFrequency:   'Unknown',\n    followerCount:      followerCount,\n    lastAnalyzed:       new Date().toISOString(),\n    bestPerformingHooks: 'No data',\n  }}];\n}\n\n// ─── Compute engagement rates ─────────────────────────────────────────────────\nconst engagements = rawPosts.map(post => {\n  const stats   = post.stats || post.statistics || {};\n  const plays   = Number(stats.playCount   || stats.play_count   || 1);\n  const likes   = Number(stats.diggCount   || stats.like_count   || 0);\n  const comments= Number(stats.commentCount|| stats.comment_count|| 0);\n  const shares  = Number(stats.shareCount  || stats.share_count  || 0);\n  const rate    = plays > 0 ? ((likes + comments + shares) / plays) * 100 : 0;\n  return { plays, likes, comments, shares, rate, post };\n});\n\nconst avgEngRate = engagements.reduce((s, e) => s + e.rate, 0) / engagements.length;\n\n// ─── Find top performer (for hooks) ──────────────────────────────────────────\nconst sorted = [...engagements].sort((a, b) => b.rate - a.rate);\nconst topHooks = sorted.slice(0, 3).map(e => {\n  const desc = e.post.desc || e.post.description || e.post.video?.desc || '';\n  return desc.split(/\\s+/).slice(0, 10).join(' ');\n}).filter(Boolean);\n\n// ─── Extract content themes from hashtags ────────────────────────────────────\nconst allTags = [];\nfor (const { post } of engagements) {\n  const challenges = post.challenges || post.textExtra || [];\n  for (const ch of challenges) {\n    const tag = ch.title || ch.hashtagName || ch.text || '';\n    if (tag) allTags.push(tag.toLowerCase());\n  }\n  // also parse hashtags from description\n  const desc = post.desc || post.description || '';\n  const hashMatches = desc.match(/#[\\w]+/g) || [];\n  allTags.push(...hashMatches.map(t => t.replace('#', '').toLowerCase()));\n}\n// Count frequency\nconst tagFreq = {};\nfor (const t of allTags) { tagFreq[t] = (tagFreq[t] || 0) + 1; }\nconst topThemes = Object.entries(tagFreq)\n  .sort((a, b) => b[1] - a[1])\n  .slice(0, 5)\n  .map(([tag]) => `#${tag}`)\n  .join(', ');\n\n// ─── Posting frequency ───────────────────────────────────────────────────────\nconst timestamps = rawPosts\n  .map(p => Number(p.createTime || p.create_time || 0))\n  .filter(t => t > 0)\n  .sort((a, b) => b - a);\n\nlet postingFrequency = 'Unknown';\nif (timestamps.length >= 2) {\n  const daysBetween = [];\n  for (let i = 0; i < timestamps.length - 1; i++) {\n    daysBetween.push((timestamps[i] - timestamps[i + 1]) / 86400);\n  }\n  const avgDays = daysBetween.reduce((s, d) => s + d, 0) / daysBetween.length;\n  postingFrequency = `Every ${avgDays.toFixed(1)} days`;\n}\n\nreturn [{\n  json: {\n    creatorName:         username,\n    platform:            'TikTok',\n    avgEngagementRate:   Math.round(avgEngRate * 100) / 100,\n    topContentThemes:    topThemes || 'No hashtags found',\n    postingFrequency:    postingFrequency,\n    followerCount:       followerCount,\n    lastAnalyzed:        new Date().toISOString(),\n    bestPerformingHooks: topHooks.join(' | ') || 'No hooks extracted',\n  }\n}];\n"
+      },
+      "id": "11111111-1111-1111-1111-111111111112",
+      "name": "Analyze Creator Intelligence",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "content": "### Write to Notion\nCreates or updates a page in the \"Creator Intelligence\" database.\nOne page per creator username.\n\n**Database properties expected:**\nCreatorName (title), Platform (select), AvgEngagementRate (number), TopContentThemes (rich_text), PostingFrequency (rich_text), FollowerCount (number), LastAnalyzed (date), BestPerformingHooks (rich_text)",
+        "height": 210,
+        "width": 320,
+        "color": 3
+      },
+      "id": "11111111-1111-1111-1111-111111111113",
+      "name": "Sticky Note - Notion Output",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1320, -270]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "value": "={{$env.NOTION_CREATORS_DB}}",
+          "mode": "id"
+        },
+        "title": "={{$json.creatorName}}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Platform",
+              "type": "select",
+              "selectValue": "={{$json.platform}}"
+            },
+            {
+              "key": "AvgEngagementRate",
+              "type": "number",
+              "numberValue": "={{$json.avgEngagementRate}}"
+            },
+            {
+              "key": "TopContentThemes",
+              "type": "richText",
+              "textContent": "={{$json.topContentThemes}}"
+            },
+            {
+              "key": "PostingFrequency",
+              "type": "richText",
+              "textContent": "={{$json.postingFrequency}}"
+            },
+            {
+              "key": "FollowerCount",
+              "type": "number",
+              "numberValue": "={{$json.followerCount}}"
+            },
+            {
+              "key": "LastAnalyzed",
+              "type": "date",
+              "dateValue": "={{$json.lastAnalyzed}}"
+            },
+            {
+              "key": "BestPerformingHooks",
+              "type": "richText",
+              "textContent": "={{$json.bestPerformingHooks}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "11111111-1111-1111-1111-111111111114",
+      "name": "Update Creator in Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1320, 0],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-credential-id",
+          "name": "Notion API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 8AM Trigger": {
+      "main": [
+        [
+          {
+            "node": "Load Creator List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Creator List": {
+      "main": [
+        [
+          {
+            "node": "For Each Creator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "For Each Creator": {
+      "main": [
+        [
+          {
+            "node": "TikTok User Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok User Info": {
+      "main": [
+        [
+          {
+            "node": "TikTok Recent Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Recent Videos": {
+      "main": [
+        [
+          {
+            "node": "Analyze Creator Intelligence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Creator Intelligence": {
+      "main": [
+        [
+          {
+            "node": "Update Creator in Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Creator in Notion": {
+      "main": [
+        [
+          {
+            "node": "For Each Creator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "social-brain"
+    },
+    {
+      "name": "creators"
+    }
+  ]
+}

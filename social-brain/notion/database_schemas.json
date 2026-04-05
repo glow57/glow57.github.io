@@ -1,0 +1,150 @@
+{
+  "databases": [
+    {
+      "name": "Trends Database",
+      "description": "Stores trending topics from TikTok, YouTube, and Instagram. Updated every 2 hours by Workflow 01.",
+      "properties": {
+        "Name": { "type": "title" },
+        "Platform": { "type": "select", "options": ["TikTok","YouTube","Instagram","Twitter"] },
+        "TrendScore": { "type": "number", "format": "number" },
+        "Hashtags": { "type": "multi_select", "options": [] },
+        "ExampleContent": { "type": "rich_text" },
+        "NicheRelevance": { "type": "select", "options": ["High","Medium","Low"] },
+        "CreatedAt": { "type": "date" }
+      },
+      "views": [
+        { "name": "All Trends", "type": "table" },
+        { "name": "High Relevance", "type": "table", "filter": { "NicheRelevance": "High" } },
+        { "name": "By TrendScore", "type": "table", "sort": { "TrendScore": "descending" } }
+      ]
+    },
+    {
+      "name": "Creator Intelligence",
+      "description": "Tracks competitor and inspiration creators. Updated daily by Workflow 02.",
+      "properties": {
+        "CreatorName": { "type": "title" },
+        "Platform": { "type": "select", "options": ["TikTok","YouTube","Instagram","Twitter"] },
+        "FollowerCount": { "type": "number", "format": "number" },
+        "AvgEngagementRate": { "type": "number", "format": "percent" },
+        "TopContentThemes": { "type": "multi_select", "options": [] },
+        "PostingFrequency": { "type": "rich_text" },
+        "BestPerformingHooks": { "type": "rich_text" },
+        "LastAnalyzed": { "type": "date" }
+      },
+      "views": [
+        { "name": "All Creators", "type": "table" },
+        { "name": "By Engagement", "type": "table", "sort": { "AvgEngagementRate": "descending" } }
+      ]
+    },
+    {
+      "name": "Performance Analytics",
+      "description": "Your own content performance across all platforms. Updated daily by Workflow 03.",
+      "properties": {
+        "VideoTitle": { "type": "title" },
+        "Platform": { "type": "select", "options": ["TikTok","YouTube","Instagram","Twitter"] },
+        "Views": { "type": "number", "format": "number" },
+        "Likes": { "type": "number", "format": "number" },
+        "Comments": { "type": "number", "format": "number" },
+        "Shares": { "type": "number", "format": "number" },
+        "EngagementRate": { "type": "number", "format": "percent" },
+        "WatchTimePercent": { "type": "number", "format": "percent" },
+        "PostedAt": { "type": "date" },
+        "PerformanceScore": { "type": "number", "format": "number" },
+        "ContentType": { "type": "select", "options": ["Tutorial","Story","List","Challenge","Trend","Reel","Short","Carousel"] }
+      },
+      "views": [
+        { "name": "All Posts", "type": "table" },
+        { "name": "Top Performers", "type": "table", "sort": { "PerformanceScore": "descending" } },
+        { "name": "By Platform", "type": "board", "groupBy": "Platform" }
+      ]
+    },
+    {
+      "name": "Content Pipeline",
+      "description": "The full content production pipeline from idea to publish. Central hub of the system.",
+      "properties": {
+        "IdeaTitle": { "type": "title" },
+        "Status": {
+          "type": "select",
+          "options": ["Idea","Scripted","Approved","InProduction","VideoReady","Scheduled","Published","Viral","Archived"]
+        },
+        "Platform": { "type": "multi_select", "options": ["TikTok","YouTube","Instagram","Twitter","All"] },
+        "Hook": { "type": "rich_text" },
+        "Script": { "type": "rich_text" },
+        "Captions": { "type": "rich_text" },
+        "Hashtags": { "type": "multi_select", "options": [] },
+        "ThumbnailConcept": { "type": "rich_text" },
+        "Priority": { "type": "select", "options": ["High","Medium","Low"] },
+        "ContentType": { "type": "select", "options": ["Tutorial","Story","List","Challenge","Trend","Reel","Short","Carousel"] },
+        "GeneratedAt": { "type": "date" },
+        "PublishedAt": { "type": "date" },
+        "VideoUrl": { "type": "url" },
+        "TikTokVideoId": { "type": "rich_text" },
+        "YouTubeVideoId": { "type": "rich_text" },
+        "InstagramMediaId": { "type": "rich_text" }
+      },
+      "views": [
+        { "name": "Kanban Pipeline", "type": "board", "groupBy": "Status" },
+        { "name": "All Content", "type": "table" },
+        { "name": "High Priority", "type": "table", "filter": { "Priority": "High" } },
+        { "name": "Ready to Post", "type": "table", "filter": { "Status": "VideoReady" } }
+      ]
+    },
+    {
+      "name": "Content Calendar",
+      "description": "Scheduled posting calendar across all platforms. Updated by Workflow 06.",
+      "properties": {
+        "Title": { "type": "title" },
+        "Platform": { "type": "select", "options": ["TikTok","YouTube","Instagram","Twitter"] },
+        "ScheduledTime": { "type": "date" },
+        "Status": { "type": "select", "options": ["Scheduled","Published","Cancelled","Rescheduled"] },
+        "ContentId": { "type": "rich_text" },
+        "VideoUrl": { "type": "url" }
+      },
+      "views": [
+        { "name": "Calendar View", "type": "calendar", "dateProperty": "ScheduledTime" },
+        { "name": "Upcoming", "type": "table", "sort": { "ScheduledTime": "ascending" } },
+        { "name": "By Platform", "type": "board", "groupBy": "Platform" }
+      ]
+    },
+    {
+      "name": "Engagement Tracking",
+      "description": "Hourly engagement snapshots for published content. Viral detection by Workflow 08.",
+      "properties": {
+        "PostTitle": { "type": "title" },
+        "Platform": { "type": "select", "options": ["TikTok","YouTube","Instagram","Twitter","Combined"] },
+        "Views": { "type": "number", "format": "number" },
+        "Likes": { "type": "number", "format": "number" },
+        "Comments": { "type": "number", "format": "number" },
+        "Shares": { "type": "number", "format": "number" },
+        "EngagementRate": { "type": "number", "format": "percent" },
+        "HoursSincePost": { "type": "number", "format": "number" },
+        "GrowthVelocity": { "type": "number", "format": "number" },
+        "IsViral": { "type": "checkbox" },
+        "RecordedAt": { "type": "date" }
+      },
+      "views": [
+        { "name": "All Snapshots", "type": "table" },
+        { "name": "Viral Content", "type": "table", "filter": { "IsViral": true } },
+        { "name": "Growth Velocity", "type": "table", "sort": { "GrowthVelocity": "descending" } }
+      ]
+    },
+    {
+      "name": "Weekly Reports",
+      "description": "Sunday AI-generated performance reports with recommendations. Created by Workflow 09.",
+      "properties": {
+        "WeekOf": { "type": "title" },
+        "TotalViews": { "type": "number", "format": "number" },
+        "TotalEngagements": { "type": "number", "format": "number" },
+        "PostsPublished": { "type": "number", "format": "number" },
+        "AvgEngagementRate": { "type": "number", "format": "percent" },
+        "TopPerformingContent": { "type": "rich_text" },
+        "WeekSummary": { "type": "rich_text" },
+        "NextWeekRecommendations": { "type": "rich_text" },
+        "CreatedAt": { "type": "date" }
+      },
+      "views": [
+        { "name": "All Reports", "type": "table", "sort": { "CreatedAt": "descending" } }
+      ]
+    }
+  ]
+}

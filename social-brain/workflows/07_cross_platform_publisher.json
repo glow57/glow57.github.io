@@ -1,0 +1,560 @@
+{
+  "name": "07 - Cross-Platform Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "publish-now",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 400],
+      "webhookId": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/{{$env.NOTION_PIPELINE_DB}}/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.NOTION_API_KEY}}"
+            },
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "filter",
+              "value": "={\"property\": \"IdeaTitle\", \"title\": {\"equals\": \"{{$json.contentId}}\"}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Fetch Content from Notion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.platform}}",
+                    "rightValue": "tiktok",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "TikTok"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.platform}}",
+                    "rightValue": "youtube",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "YouTube"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.platform}}",
+                    "rightValue": "instagram",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Instagram"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.platform}}",
+                    "rightValue": "twitter",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Twitter"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+      "name": "Route by Platform",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/video/init/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.TIKTOK_ACCESS_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"post_info\": {\n    \"title\": \"{{$('Webhook').item.json.caption}}\",\n    \"privacy_level\": \"PUBLIC_TO_EVERYONE\",\n    \"disable_duet\": false,\n    \"disable_comment\": false,\n    \"disable_stitch\": false,\n    \"video_cover_timestamp_ms\": 1000\n  },\n  \"source_info\": {\n    \"source\": \"PULL_FROM_URL\",\n    \"video_url\": \"{{$('Webhook').item.json.videoUrl}}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+      "name": "TikTok - Publish Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.YOUTUBE_OAUTH_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Upload-Content-Type",
+              "value": "video/*"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"snippet\": {\n    \"title\": \"{{$('Webhook').item.json.title}}\",\n    \"description\": \"{{$('Webhook').item.json.caption}}\\n\\n{{$('Webhook').item.json.hashtags.join(' ')}}\",\n    \"tags\": {{$('Webhook').item.json.hashtags}},\n    \"categoryId\": \"22\",\n    \"defaultLanguage\": \"en\"\n  },\n  \"status\": {\n    \"privacyStatus\": \"public\",\n    \"selfDeclaredMadeForKids\": false\n  }\n}",
+        "options": {}
+      },
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+      "name": "YouTube - Initiate Upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 360]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.instagram.com/v18.0/{{$env.INSTAGRAM_BUSINESS_ID}}/media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"media_type\": \"REELS\",\n  \"video_url\": \"{{$('Webhook').item.json.videoUrl}}\",\n  \"caption\": \"{{$('Webhook').item.json.caption}} {{$('Webhook').item.json.hashtags.join(' ')}}\",\n  \"access_token\": \"{{$env.INSTAGRAM_ACCESS_TOKEN}}\"\n}",
+        "options": {}
+      },
+      "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+      "name": "Instagram - Create Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 520]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.instagram.com/v18.0/{{$env.INSTAGRAM_BUSINESS_ID}}/media_publish",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"creation_id\": \"{{$json.id}}\",\n  \"access_token\": \"{{$env.INSTAGRAM_ACCESS_TOKEN}}\"\n}",
+        "options": {}
+      },
+      "id": "b8c9d0e1-f2a3-4567-bcde-678901234567",
+      "name": "Instagram - Publish Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 520]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twitter.com/2/tweets",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.TWITTER_ACCESS_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{$('Webhook').item.json.caption}} {{$('Webhook').item.json.hashtags.join(' ')}}\",\n  \"media\": {\n    \"media_ids\": [\"{{$json.mediaUploadId}}\"]\n  }\n}",
+        "options": {}
+      },
+      "id": "c9d0e1f2-a3b4-5678-cdef-789012345678",
+      "name": "Twitter - Post Tweet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 680]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "clashHandling": {
+          "values": {
+            "resolveClash": "addSuffix"
+          }
+        }
+      },
+      "id": "d0e1f2a3-b4c5-6789-defa-890123456789",
+      "name": "Merge Platform Responses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1340, 440]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Extract post IDs and URLs from all platform responses\nconst items = $input.all();\nconst results = {\n  tiktokPostId: null,\n  tiktokPostUrl: null,\n  youtubeVideoId: null,\n  youtubeVideoUrl: null,\n  instagramMediaId: null,\n  instagramPostUrl: null,\n  twitterTweetId: null,\n  twitterPostUrl: null,\n  publishedAt: new Date().toISOString(),\n  contentId: items[0]?.json?.contentId || null\n};\n\nfor (const item of items) {\n  const data = item.json;\n  \n  // TikTok response\n  if (data?.data?.publish_id) {\n    results.tiktokPostId = data.data.publish_id;\n    results.tiktokPostUrl = `https://www.tiktok.com/@${process.env.MY_TIKTOK_USERNAME}/video/${data.data.publish_id}`;\n  }\n  \n  // YouTube response - get video ID from Location header or response\n  if (data?.id && data?.kind === 'youtube#video') {\n    results.youtubeVideoId = data.id;\n    results.youtubeVideoUrl = `https://www.youtube.com/watch?v=${data.id}`;\n  }\n  \n  // Instagram response\n  if (data?.id && !data?.kind) {\n    results.instagramMediaId = data.id;\n    results.instagramPostUrl = `https://www.instagram.com/p/${data.id}`;\n  }\n  \n  // Twitter response\n  if (data?.data?.id && data?.data?.text) {\n    results.twitterTweetId = data.data.id;\n    results.twitterPostUrl = `https://twitter.com/i/web/status/${data.data.id}`;\n  }\n}\n\nreturn [{ json: results }];"
+      },
+      "id": "e1f2a3b4-c5d6-7890-efab-901234567890",
+      "name": "Extract Post IDs and URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 440]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{$('Webhook').item.json.contentId}}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status",
+              "type": "select",
+              "selectValue": "Published"
+            },
+            {
+              "key": "PublishedAt",
+              "type": "date",
+              "dateValue": "={{$json.publishedAt}}"
+            },
+            {
+              "key": "VideoUrl",
+              "type": "url",
+              "urlValue": "={{$json.youtubeVideoUrl || $json.tiktokPostUrl || $json.instagramPostUrl || $json.twitterPostUrl}}"
+            }
+          ]
+        }
+      },
+      "id": "f2a3b4c5-d6e7-8901-fabc-012345678901",
+      "name": "Update Notion - Mark Published",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [1780, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.N8N_WEBHOOK_URL}}/webhook/engagement-tracker",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contentId\": \"{{$json.contentId}}\",\n  \"publishedAt\": \"{{$json.publishedAt}}\",\n  \"tiktokPostId\": \"{{$json.tiktokPostId}}\",\n  \"youtubeVideoId\": \"{{$json.youtubeVideoId}}\",\n  \"instagramMediaId\": \"{{$json.instagramMediaId}}\",\n  \"twitterTweetId\": \"{{$json.twitterTweetId}}\",\n  \"tiktokPostUrl\": \"{{$json.tiktokPostUrl}}\",\n  \"youtubeVideoUrl\": \"{{$json.youtubeVideoUrl}}\",\n  \"instagramPostUrl\": \"{{$json.instagramPostUrl}}\",\n  \"twitterPostUrl\": \"{{$json.twitterPostUrl}}\"\n}",
+        "options": {}
+      },
+      "id": "a3b4c5d6-e7f8-9012-abcd-123456789012",
+      "name": "Trigger Engagement Tracker",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2000, 440]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true, \"message\": \"Content published successfully\", \"postIds\": {\"tiktok\": \"{{$('Extract Post IDs and URLs').item.json.tiktokPostId}}\", \"youtube\": \"{{$('Extract Post IDs and URLs').item.json.youtubeVideoId}}\", \"instagram\": \"{{$('Extract Post IDs and URLs').item.json.instagramMediaId}}\", \"twitter\": \"{{$('Extract Post IDs and URLs').item.json.twitterTweetId}}\"}}"
+      },
+      "id": "b4c5d6e7-f8a9-0123-bcde-234567890123",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2220, 440]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Content from Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Content from Notion": {
+      "main": [
+        [
+          {
+            "node": "Route by Platform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Platform": {
+      "main": [
+        [
+          {
+            "node": "TikTok - Publish Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "YouTube - Initiate Upload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Instagram - Create Container",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Twitter - Post Tweet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok - Publish Video": {
+      "main": [
+        [
+          {
+            "node": "Merge Platform Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube - Initiate Upload": {
+      "main": [
+        [
+          {
+            "node": "Merge Platform Responses",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Instagram - Create Container": {
+      "main": [
+        [
+          {
+            "node": "Instagram - Publish Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram - Publish Media": {
+      "main": [
+        [
+          {
+            "node": "Merge Platform Responses",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Twitter - Post Tweet": {
+      "main": [
+        [
+          {
+            "node": "Merge Platform Responses",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge Platform Responses": {
+      "main": [
+        [
+          {
+            "node": "Extract Post IDs and URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Post IDs and URLs": {
+      "main": [
+        [
+          {
+            "node": "Update Notion - Mark Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Notion - Mark Published": {
+      "main": [
+        [
+          {
+            "node": "Trigger Engagement Tracker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Engagement Tracker": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "social-brain"
+    },
+    {
+      "name": "publishing"
+    }
+  ]
+}

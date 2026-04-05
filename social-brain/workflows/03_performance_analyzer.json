@@ -1,0 +1,136 @@
+{
+  "name": "03 | Content Performance Analyzer",
+  "nodes": [
+    {
+      "id": "c0000001-0003-4000-8000-000000000001",
+      "name": "Sticky Note — Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -200],
+      "parameters": {
+        "content": "## 03 | Content Performance Analyzer\nRuns daily at 6 AM. Fetches your own content stats across TikTok, YouTube, and Instagram. Calculates performance scores and optimal posting times. Stores results in Notion.\n\n**Env vars needed:**\n- RAPIDAPI_KEY\n- MY_TIKTOK_USERNAME\n- YOUTUBE_API_KEY, YOUTUBE_CHANNEL_ID\n- INSTAGRAM_ACCESS_TOKEN\n- NOTION_API_KEY, NOTION_PERFORMANCE_DB",
+        "height": 240, "width": 420, "color": 3
+      }
+    },
+    {
+      "id": "c0000001-0003-4000-8000-000000000002",
+      "name": "Schedule — Daily 6AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 6 * * *" }] } }
+    },
+    {
+      "id": "c0000001-0003-4000-8000-000000000003",
+      "name": "Fetch My TikTok Videos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, -100],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://tiktok-api23.p.rapidapi.com/api/user/posts?uniqueId={{ $env.MY_TIKTOK_USERNAME }}&count=20",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-RapidAPI-Key", "value": "={{ $env.RAPIDAPI_KEY }}" },
+            { "name": "X-RapidAPI-Host", "value": "tiktok-api23.p.rapidapi.com" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c0000001-0003-4000-8000-000000000004",
+      "name": "Fetch YouTube Channel Videos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 100],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/youtube/v3/search?part=snippet&channelId={{ $env.YOUTUBE_CHANNEL_ID }}&order=date&maxResults=20&type=video&key={{ $env.YOUTUBE_API_KEY }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "c0000001-0003-4000-8000-000000000005",
+      "name": "Fetch YouTube Video Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 100],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id={{ $json.items.map(i=>i.id.videoId).join(',') }}&key={{ $env.YOUTUBE_API_KEY }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "c0000001-0003-4000-8000-000000000006",
+      "name": "Fetch Instagram Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.instagram.com/me/media?fields=id,caption,media_type,timestamp,like_count,comments_count,media_url&access_token={{ $env.INSTAGRAM_ACCESS_TOKEN }}&limit=20",
+        "options": {}
+      }
+    },
+    {
+      "id": "c0000001-0003-4000-8000-000000000007",
+      "name": "Calculate Performance Scores",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 100],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const tiktokData = $('Fetch My TikTok Videos').first().json;\nconst ytVideos = $('Fetch YouTube Channel Videos').first().json;\nconst ytStats = $('Fetch YouTube Video Stats').first().json;\nconst igData = $('Fetch Instagram Media').first().json;\n\nconst results = [];\n\n// TikTok\ntry {\n  for (const v of (tiktokData.data?.videos || []).slice(0, 20)) {\n    const views = v.stats?.playCount || 1;\n    const likes = v.stats?.diggCount || 0;\n    const comments = v.stats?.commentCount || 0;\n    const shares = v.stats?.shareCount || 0;\n    const engRate = ((likes + comments + shares) / views * 100).toFixed(2);\n    const score = Math.min(100, Math.round((parseFloat(engRate) * 10) + (views / 10000)));\n    results.push({\n      videoTitle: (v.desc || 'TikTok Video').substring(0, 100),\n      platform: 'TikTok',\n      views, likes, comments, shares,\n      engagementRate: parseFloat(engRate),\n      watchTimePercent: 0,\n      postedAt: v.createTime ? new Date(v.createTime * 1000).toISOString() : new Date().toISOString(),\n      performanceScore: score,\n      contentType: 'Short'\n    });\n  }\n} catch(e) {}\n\n// YouTube\ntry {\n  const statsMap = {};\n  for (const s of (ytStats.items || [])) {\n    statsMap[s.id] = s.statistics;\n  }\n  for (const v of (ytVideos.items || []).slice(0, 20)) {\n    const vid = v.id?.videoId;\n    const st = statsMap[vid] || {};\n    const views = parseInt(st.viewCount || 0);\n    const likes = parseInt(st.likeCount || 0);\n    const comments = parseInt(st.commentCount || 0);\n    const engRate = views ? ((likes + comments) / views * 100).toFixed(2) : 0;\n    const score = Math.min(100, Math.round((parseFloat(engRate) * 10) + (views / 10000)));\n    results.push({\n      videoTitle: (v.snippet?.title || 'YouTube Video').substring(0, 100),\n      platform: 'YouTube',\n      views, likes, comments, shares: 0,\n      engagementRate: parseFloat(engRate),\n      watchTimePercent: 0,\n      postedAt: v.snippet?.publishedAt || new Date().toISOString(),\n      performanceScore: score,\n      contentType: 'Short'\n    });\n  }\n} catch(e) {}\n\n// Instagram\ntry {\n  for (const p of (igData.data || []).slice(0, 20)) {\n    const likes = p.like_count || 0;\n    const comments = p.comments_count || 0;\n    const engRate = ((likes + comments) / 1000 * 100).toFixed(2);\n    const score = Math.min(100, Math.round(parseFloat(engRate) * 5));\n    results.push({\n      videoTitle: (p.caption || 'Instagram Post').substring(0, 100),\n      platform: 'Instagram',\n      views: 0, likes, comments, shares: 0,\n      engagementRate: parseFloat(engRate),\n      watchTimePercent: 0,\n      postedAt: p.timestamp || new Date().toISOString(),\n      performanceScore: score,\n      contentType: p.media_type === 'VIDEO' ? 'Reel' : 'Carousel'\n    });\n  }\n} catch(e) {}\n\nreturn results.map(r => ({ json: r }));"
+      }
+    },
+    {
+      "id": "c0000001-0003-4000-8000-000000000008",
+      "name": "Save Performance to Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [900, 100],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": "={{ $env.NOTION_PERFORMANCE_DB }}",
+        "title": "={{ $json.videoTitle }}",
+        "propertiesUi": {
+          "propertyValues": [
+            { "key": "Platform", "type": "select", "selectValue": "={{ $json.platform }}" },
+            { "key": "Views", "type": "number", "numberValue": "={{ $json.views }}" },
+            { "key": "Likes", "type": "number", "numberValue": "={{ $json.likes }}" },
+            { "key": "Comments", "type": "number", "numberValue": "={{ $json.comments }}" },
+            { "key": "Shares", "type": "number", "numberValue": "={{ $json.shares }}" },
+            { "key": "EngagementRate", "type": "number", "numberValue": "={{ $json.engagementRate }}" },
+            { "key": "WatchTimePercent", "type": "number", "numberValue": "={{ $json.watchTimePercent }}" },
+            { "key": "PostedAt", "type": "date", "dateValue": "={{ $json.postedAt }}" },
+            { "key": "PerformanceScore", "type": "number", "numberValue": "={{ $json.performanceScore }}" },
+            { "key": "ContentType", "type": "select", "selectValue": "={{ $json.contentType }}" }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": { "notionApi": { "id": "notion-creds", "name": "Notion API" } }
+    }
+  ],
+  "connections": {
+    "Schedule — Daily 6AM": {
+      "main": [[
+        { "node": "Fetch My TikTok Videos", "type": "main", "index": 0 },
+        { "node": "Fetch YouTube Channel Videos", "type": "main", "index": 0 },
+        { "node": "Fetch Instagram Media", "type": "main", "index": 0 }
+      ]]
+    },
+    "Fetch My TikTok Videos": { "main": [[{ "node": "Calculate Performance Scores", "type": "main", "index": 0 }]] },
+    "Fetch YouTube Channel Videos": { "main": [[{ "node": "Fetch YouTube Video Stats", "type": "main", "index": 0 }]] },
+    "Fetch YouTube Video Stats": { "main": [[{ "node": "Calculate Performance Scores", "type": "main", "index": 0 }]] },
+    "Fetch Instagram Media": { "main": [[{ "node": "Calculate Performance Scores", "type": "main", "index": 0 }]] },
+    "Calculate Performance Scores": { "main": [[{ "node": "Save Performance to Notion", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "social-brain" }]
+}
